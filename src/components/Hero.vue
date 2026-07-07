@@ -1,8 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as THREE from 'three'
-import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
-import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
+import { Text } from 'troika-three-text'
 
 const heroContainer = ref(null)
 const canvas = ref(null)
@@ -18,7 +17,7 @@ const line2Ref = ref(null)
 const currentLanguage = ref('EN')
 const isGlobalLightOn = ref(false)
 
-// Интерактивный список тегов интерфейса (прыгающий ховер удален)
+// Интерактивный список тегов интерфейса
 const tags = ref([
   { original: 'Concept', current: 'Concept' },
   { original: 'Light', current: 'Light' },
@@ -31,16 +30,16 @@ const tags = ref([
   { original: 'Impact', current: 'Impact' }
 ])
 
-// Полный перечень глобальных переменных сцены во избежание ReferenceError (dimSun и ambientLight объявлены!)
+// Глобальные переменные сцены
 let scene, camera, renderer, spotlight, lightTarget, dustParticles
 let projectorBody, projectorAssembly
 let beamMesh, beamShaderMat
 let textMesh1, textMesh2 // Невидимые 3D-дубликаты для генерации теней
-let dimSun, ambientLight // Глобальные переменные источников света
-let loadedFont = null
+let dimSun, ambientLight
 let animationFrameId
 let startTime = performance.now()
 let isControlLocked = true // Блокировка прожектора на старте
+let createdBlobUrl = null // Хранение ссылки на временный Blob URL для очистки памяти
 
 let targetIntensity = 20
 let currentIntensity = 0
@@ -50,12 +49,11 @@ const initialTargetX = -2.2
 const initialTargetY = 0.0
 const targetCameraPos = new THREE.Vector3(0, 0, 9.5)
 
-// Вектор цели для плавного перехода луча к курсору без прыжков
+// Вектор цели для плавного перехода луча к курсору
 const mouseTarget = new THREE.Vector3(initialTargetX, initialTargetY, -2.0)
 
-// Плавный латинский Scramble-эффект
+// Плавный латинский/кириллический Scramble-эффект
 const scramble = (targetText, reactiveRef, delay = 100, duration = 1000) => {
-  const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let start = null
 
   setTimeout(() => {
@@ -101,9 +99,9 @@ const scramble = (targetText, reactiveRef, delay = 100, duration = 1000) => {
   }, delay)
 }
 
-// Переключение языков с интерактивным перестроением 3D сцены в реальном времени
+// Переключение языков (блокировка по свету убрана)
 const toggleLanguage = () => {
-  if (isGlobalLightOn.value || isControlLocked) return
+  if (isControlLocked) return
 
   currentLanguage.value = currentLanguage.value === 'EN' ? 'RU' : 'EN'
 
@@ -138,21 +136,21 @@ const toggleLanguage = () => {
   }
 }
 
-// Построение невидимого 3D-текста (внутренняя геометрия центрируется)
+// Построение невидимого 3D-текста
 const update3DTextGeometry = (text, mesh, size) => {
-  if (!loadedFont || !mesh) return
+  if (!mesh) return
 
-  if (mesh.geometry) mesh.geometry.dispose()
-
-  mesh.geometry = new TextGeometry(text, {
-    font: loadedFont,
-    size: size,
-    depth: 0.1,
-    curveSegments: 4,
-    bevelEnabled: false
+  mesh.text = text
+  mesh.fontSize = size
+  mesh.sync(() => {
+    // Отключаем запись цвета в буфер кадра (делает текст невидимым),
+    // но сохраняем запись в буфер глубины для генерации теней
+    if (mesh.material) {
+      mesh.material.colorWrite = false
+      mesh.material.depthWrite = true
+    }
+    syncTextPositionAndScale()
   })
-
-  mesh.geometry.center() // Держим геометрию строго по центру локальных осей
 }
 
 // Математический пересчет координат DOM-элементов в 3D пространство WebGL
@@ -162,11 +160,9 @@ const syncTextPositionAndScale = () => {
   const width = heroContainer.value.clientWidth
   const height = heroContainer.value.clientHeight
 
-  // 1. Получаем точные экранные пиксели элементов
   const rect1 = line1Ref.value.getBoundingClientRect()
   const rect2 = line2Ref.value.getBoundingClientRect()
 
-  // 2. Рассчитываем 3D-размеры усеченного конуса камеры на глубине z = -1.8
   const camZ = camera.position.z
   const textZ = -1.8
   const dist = camZ - textZ
@@ -177,30 +173,31 @@ const syncTextPositionAndScale = () => {
   const mapRectToMesh = (rect, mesh) => {
     if (rect.width === 0 || rect.height === 0) return
 
-    // Переводим пиксельный центр элемента в NDC (-1..1)
     const pixelX = rect.left + rect.width / 2
     const pixelY = rect.top + rect.height / 2
 
     const ndcX = (pixelX / width) * 2 - 1
     const ndcY = -(pixelY / height) * 2 + 1
 
-    // Проецируем NDC координаты на 3D мир
     const worldX = ndcX * (worldWidth / 2)
     const worldY = ndcY * (worldHeight / 2)
 
     mesh.position.set(worldX, worldY, textZ)
 
-    // Находим точную ширину и высоту в единицах WebGL
     const meshWidth3D = (rect.width / width) * worldWidth
     const meshHeight3D = (rect.height / height) * worldHeight
 
-    mesh.geometry.computeBoundingBox()
-    const geomWidth = mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x
-    const geomHeight = mesh.geometry.boundingBox.max.y - mesh.geometry.boundingBox.min.y
+    if (mesh.geometry) {
+      mesh.geometry.computeBoundingBox()
+      const bbox = mesh.geometry.boundingBox
+      if (bbox) {
+        const geomWidth = bbox.max.x - bbox.min.x
+        const geomHeight = bbox.max.y - bbox.min.y
 
-    if (geomWidth > 0 && geomHeight > 0) {
-      // Идеальное масштабирование 3D-копии под габариты HTML текста
-      mesh.scale.set(meshWidth3D / geomWidth, meshHeight3D / geomHeight, 1)
+        if (geomWidth > 0 && geomHeight > 0) {
+          mesh.scale.set(meshWidth3D / geomWidth, meshHeight3D / geomHeight, 1)
+        }
+      }
     }
   }
 
@@ -239,9 +236,9 @@ const initThree = () => {
   renderer.setSize(width, height)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap // Возвращены МЯГКИЕ тени
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-  // Стенка на заднем плане (Оригинальный темно-серый цвет #0e0e0f)
+  // Стенка на заднем плане
   const wallGeo = new THREE.PlaneGeometry(35, 20)
   const wallMat = new THREE.MeshStandardMaterial({
     color: 0x0d0d10,
@@ -267,25 +264,20 @@ const initThree = () => {
   floor.receiveShadow = true
   scene.add(floor)
 
-  // Глобальный теплый источник света (Убран const для выноса в глобальный let)
-  // Направлен ЗА КАМЕРУ на z = 15.0 для идеальной засветки всей комнаты
   dimSun = new THREE.DirectionalLight(0xe2dcd2, 0.42)
   dimSun.position.set(0, 4.0, 15.0)
   scene.add(dimSun)
 
-  // Убран const для выноса в глобальный let
   ambientLight = new THREE.AmbientLight(0xffffff, 0.04)
   scene.add(ambientLight)
 
-  // --- Модель прожектора у правого верхнего края экрана (y = 1.9) ---
+  // Конструкция прожектора
   projectorAssembly = new THREE.Group()
   projectorAssembly.position.set(3.0, 1.9, 3.0)
   scene.add(projectorAssembly)
 
   const rodLength = 3.5
   const rodGeo = new THREE.CylinderGeometry(0.02, 0.02, rodLength, 16)
-
-  // Металл прожектора изменен на премиальный глубокий черный (0x09090b)
   const metalMat = new THREE.MeshStandardMaterial({ color: 0x09090b, metalness: 0.85, roughness: 0.15 })
 
   const rod = new THREE.Mesh(rodGeo, metalMat)
@@ -312,7 +304,6 @@ const initThree = () => {
   lensRing.position.z = -0.35
   projectorBody.add(lensRing)
 
-  // Линза светится теплым белым
   const lensGeo = new THREE.CylinderGeometry(0.13, 0.13, 0.01, 18)
   const lensMat = new THREE.MeshBasicMaterial({ color: 0xfff8ee })
   const lens = new THREE.Mesh(lensGeo, lensMat)
@@ -320,7 +311,7 @@ const initThree = () => {
   lens.position.z = -0.39
   projectorBody.add(lens)
 
-  // --- Теплый белый SpotLight ---
+  // SpotLight
   spotlight = new THREE.SpotLight(0xfff8ee, 0, 18, Math.PI / 6.5, 0.5, 0.0)
   spotlight.castShadow = true
   spotlight.shadow.mapSize.width = 2048
@@ -328,16 +319,15 @@ const initThree = () => {
   spotlight.shadow.camera.near = 1.0
   spotlight.shadow.camera.far = 15
   spotlight.shadow.bias = -0.001
-  spotlight.shadow.radius = 12.0 // Очень мягкие размытые тени
+  spotlight.shadow.radius = 12.0
   projectorBody.add(spotlight)
 
-  // Настройка мишени прожектора на глубину z = -2.0 (средний план)
   lightTarget = new THREE.Object3D()
   lightTarget.position.set(initialTargetX, initialTargetY, -2.0)
   scene.add(lightTarget)
   spotlight.target = lightTarget
 
-  // --- ЕДИНЫЙ БЕСШОВНЫЙ ШЕЙДЕРНЫЙ ЛУЧ ---
+  // Объемный конус луча
   const beamGeo = new THREE.ConeGeometry(2.1, 11, 128, 1, true)
   beamGeo.translate(0, -5.5, 0)
 
@@ -381,25 +371,22 @@ const initThree = () => {
   beamMesh.position.z = -0.35
   projectorBody.add(beamMesh)
 
-  // --- 100% НЕВИДИМЫЕ 3D-ДУБЛИКАТЫ ---
-  const invisibleShadowMat = new THREE.MeshStandardMaterial({
-    transparent: true,
-    opacity: 0.0,
-    depthWrite: false
-  })
-
-  textMesh1 = new THREE.Mesh(new THREE.BufferGeometry(), invisibleShadowMat)
+  // --- ИНИЦИАЛИЗАЦИЯ TROIKA-THREE-TEXT ---
+  textMesh1 = new Text()
+  textMesh1.anchorX = 'center'
+  textMesh1.anchorY = 'middle'
   textMesh1.castShadow = true
   textMesh1.receiveShadow = true
   scene.add(textMesh1)
 
-  textMesh2 = new THREE.Mesh(new THREE.BufferGeometry(), invisibleShadowMat)
+  textMesh2 = new Text()
+  textMesh2.anchorX = 'center'
+  textMesh2.anchorY = 'middle'
   textMesh2.castShadow = true
   textMesh2.receiveShadow = true
   scene.add(textMesh2)
 
   createDustParticles()
-
   adjustLayout()
 }
 
@@ -455,15 +442,13 @@ const onMouseLeave = () => {
   hasMouseMoved = false
 }
 
-// Перестройка 3D-геометрии при изменении текста
+// Отслеживание изменений текста
 watch(textLine1, (newText) => {
-  update3DTextGeometry(newText, textMesh1, 0.35, 0.5)
-  nextTick(syncTextPositionAndScale)
+  update3DTextGeometry(newText, textMesh1, 0.35)
 })
 
 watch(textLine2, (newText) => {
-  update3DTextGeometry(newText, textMesh2, 0.85, -0.5)
-  nextTick(syncTextPositionAndScale)
+  update3DTextGeometry(newText, textMesh2, 0.85)
 })
 
 const adjustLayout = () => {
@@ -488,29 +473,21 @@ const adjustLayout = () => {
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate)
 
-  const elapsedTime = (performance.now() - startTime) / 1000
-
-  // Проверка статуса выключателя глобального света
   if (isGlobalLightOn.value) {
-    // Включение яркого выставочного света из-за спины (яркость увеличена в 13+ раз!)
     dimSun.intensity += (20.0 - dimSun.intensity) * 0.05
     ambientLight.intensity += (10.0 - ambientLight.intensity) * 0.05
 
-    // Выключение прожектора и его объемного луча
     spotlight.intensity += (0.0 - spotlight.intensity) * 0.08
     beamShaderMat.uniforms.opacity.value += (0.0 - beamShaderMat.uniforms.opacity.value) * 0.08
 
-    // Прожектор повисает вертикально вниз
     lightTarget.position.x += (3.0 - lightTarget.position.x) * 0.05
     lightTarget.position.y += (-5.0 - lightTarget.position.y) * 0.05
     lightTarget.position.z += (3.0 - lightTarget.position.z) * 0.05
 
   } else {
-    // Стандартный темный режим с прожектором
     dimSun.intensity += (0.2 - dimSun.intensity) * 0.05
     ambientLight.intensity += (0.04 - ambientLight.intensity) * 0.05
 
-    // Плавный розжиг луча
     if (currentIntensity < targetIntensity) {
       currentIntensity += (targetIntensity - currentIntensity) * 0.03
       spotlight.intensity = currentIntensity
@@ -520,7 +497,6 @@ const animate = () => {
       beamShaderMat.uniforms.opacity.value = 0.06
     }
 
-    // Плавная интерполяция положения мишени (Устраняет резкие прыжки луча при разблокировке!)
     const targetX = hasMouseMoved ? mouseTarget.x : initialTargetX
     const targetY = hasMouseMoved ? mouseTarget.y : initialTargetY
     const targetZ = hasMouseMoved ? mouseTarget.z : -2.0
@@ -530,20 +506,16 @@ const animate = () => {
     lightTarget.position.z += (targetZ - lightTarget.position.z) * 0.05
   }
 
-  // Мягкий параллакс камеры
   camera.position.x += (targetCameraPos.x - camera.position.x) * 0.05
   camera.position.y += (targetCameraPos.y - camera.position.y) * 0.05
   camera.lookAt(0, 0, -1)
 
-  // Наведение прожектора
   if (projectorBody && lightTarget) {
     projectorBody.lookAt(lightTarget.position)
   }
 
-  // Синхронизация проекции в процессе анимации параллакса камеры
   syncTextPositionAndScale()
 
-  // Пыль
   if (dustParticles) {
     const positions = dustParticles.geometry.attributes.position.array
     const velocities = dustParticles.userData.velocities
@@ -564,41 +536,67 @@ const animate = () => {
   renderer.render(scene, camera)
 }
 
+// Автоматический перебор имен файлов в папке public для точного соответствия регистру
+const findAndLoadLocalFont = async () => {
+  const possibleNames = [
+    '/Montserrat-Regular.ttf', // Точное имя вашего файла
+    '/montserrat-regular.ttf',
+    '/Montserrat_Regular.ttf',
+    '/montserrat_regular.ttf',
+    '/Montserrat.ttf',
+    '/montserrat.ttf'
+  ]
+
+  for (const fontPath of possibleNames) {
+    try {
+      const response = await fetch(fontPath)
+      if (response.ok) {
+        const buffer = await response.arrayBuffer()
+        console.log(`Successfully loaded local font: ${fontPath}`)
+        return buffer
+      }
+    } catch (e) {
+      // Игнорируем и пробуем следующий путь
+    }
+  }
+  throw new Error('Montserrat font file was not found in your public/ folder.')
+}
+
 onMounted(() => {
   initThree()
   animate()
 
-  // Стабильный фоновый импорт кириллического 3D шрифта Montserrat (Fallback-алгоритм)
-  const loader = new FontLoader()
+  findAndLoadLocalFont()
+      .then(arrayBuffer => {
+        // Конвертируем ArrayBuffer во временный Blob URL, который безошибочно считывается воркером
+        const blob = new Blob([arrayBuffer], { type: 'font/ttf' })
+        createdBlobUrl = URL.createObjectURL(blob)
 
-  const loadFont = (url) => {
-    loader.load(url, (font) => {
-      loadedFont = font
+        textMesh1.font = createdBlobUrl
+        textMesh2.font = createdBlobUrl
 
-      // Синхронизируем 3D-дубликаты после успешного получения шрифта
-      update3DTextGeometry(textLine1.value, textMesh1, 0.35)
-      update3DTextGeometry(textLine2.value, textMesh2, 0.85)
-      nextTick(syncTextPositionAndScale)
-    }, undefined, (err) => {
-      console.warn("Montserrat font failed, falling back to Helvetiker...", err)
-      // В случае блокировки сети загружаем стандартный helvetiker
-      loader.load('https://cdn.jsdelivr.net/npm/three@0.155.0/examples/fonts/helvetiker_regular.typeface.json', (fallbackFont) => {
-        loadedFont = fallbackFont
+        // Инициируем сборку геометрии
         update3DTextGeometry(textLine1.value, textMesh1, 0.35)
         update3DTextGeometry(textLine2.value, textMesh2, 0.85)
-        nextTick(syncTextPositionAndScale)
+
+        // Запуск Scramble-эффектов
+        scramble('The lighting studio of', textLine1, 100, 1800)
+        scramble('Nikolay Matsnev', textLine2, 500, 2200)
       })
-    })
-  }
+      .catch(err => {
+        console.error("Font loading sequence failed, trying CDN fallback...", err)
+        // Внешний резервный CDN-путь
+        const fallbackUrl = 'https://cdn.jsdelivr.net/gh/google/fonts@master/ofl/montserrat/Montserrat-Regular.ttf'
+        textMesh1.font = fallbackUrl
+        textMesh2.font = fallbackUrl
 
-  // Пробуем загрузить кириллический шрифт
-  loadFont('https://cdn.jsdelivr.net/gh/Sasha-Z/three-cyrillic-font@master/fonts/Montserrat/Montserrat-Regular.json')
+        update3DTextGeometry(textLine1.value, textMesh1, 0.35)
+        update3DTextGeometry(textLine2.value, textMesh2, 0.85)
 
-  // Запуск Scramble-эффектов (Запускаются мгновенно при старте, гарантируя отсутствие белого экрана)
-  scramble('The lighting studio of', textLine1, 100, 1800)
-  scramble('Nikolay Matsnev', textLine2, 500, 2200)
+        scramble('The lighting studio of', textLine1, 100, 1800)
+        scramble('Nikolay Matsnev', textLine2, 500, 2200)
+      })
 
-  // Разблокировка управления через 2.5 секунды
   setTimeout(() => {
     isControlLocked = false
   }, 2500)
@@ -610,14 +608,25 @@ onUnmounted(() => {
   cancelAnimationFrame(animationFrameId)
   window.removeEventListener('resize', adjustLayout)
 
+  // Очистка Blob-адреса из памяти браузера
+  if (createdBlobUrl) {
+    URL.revokeObjectURL(createdBlobUrl)
+  }
+
+  // Безопасное удаление объектов Troika
+  if (textMesh1 && typeof textMesh1.dispose === 'function') textMesh1.dispose()
+  if (textMesh2 && typeof textMesh2.dispose === 'function') textMesh2.dispose()
+
   if (renderer) renderer.dispose()
   scene.traverse((object) => {
     if (object.isMesh || object.isPoints) {
-      object.geometry.dispose()
-      if (Array.isArray(object.material)) {
-        object.material.forEach((mat) => mat.dispose())
-      } else {
-        object.material.dispose()
+      if (object.geometry) object.geometry.dispose()
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach((mat) => mat.dispose())
+        } else {
+          object.material.dispose()
+        }
       }
     }
   })
@@ -631,16 +640,12 @@ onUnmounted(() => {
       @mousemove="onMouseMove"
       @mouseleave="onMouseLeave"
   >
-    <!-- Полноэкранный задний 3D-фон с интегрированным 3D-текстом -->
     <div class="canvas-background">
       <canvas ref="canvas"></canvas>
     </div>
 
-    <!-- Текстовый интерфейс поверх WebGL -->
     <div class="hero-content">
-      <!-- Навигационное меню (Хедер портфолио) -->
       <nav class="hero-nav">
-        <!-- Кнопки управления (Язык и Свет) на месте логотипа слева -->
         <div class="nav-controls">
           <button class="control-btn lang-btn select-none" @click="toggleLanguage">
             {{ currentLanguage }}
@@ -650,7 +655,6 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Наведение на контейнер ссылок плавно возвращает луч на имя Николай Мацнев -->
         <div class="nav-links" @mouseenter="hasMouseMoved = false">
           <a href="#about" class="nav-item">{{ currentLanguage === 'EN' ? 'About' : 'О нас' }}</a>
           <a href="#portfolio" class="nav-item">{{ currentLanguage === 'EN' ? 'Portfolio' : 'Портфолио' }}</a>
@@ -658,7 +662,6 @@ onUnmounted(() => {
         </div>
       </nav>
 
-      <!-- Заголовок выравнивается по левой кромке -->
       <div class="hero-title-group">
         <h1 class="hero-title">
           <span class="scramble-container select-none">
@@ -685,7 +688,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Импорт кастомного шрифта оригинального сайта */
 @font-face {
   font-family: 'ApfelGrotezk-Regular';
   src: url('./ApfelGrotezk-Regular.BWvmwAfX.woff2') format('woff2'),
@@ -698,7 +700,7 @@ onUnmounted(() => {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background-color: #0e0e0f; /* Скорректировано под цвет оригинального сайта */
+  background-color: #0e0e0f;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -723,14 +725,13 @@ onUnmounted(() => {
   z-index: 2;
   width: 100%;
   height: 100%;
-  padding: 4.5rem; /* Задает единую левую кромку для заголовка и тегов */
+  padding: 4.5rem;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-/* --- Навигационное меню (Хедер) --- */
 .hero-nav {
   pointer-events: auto;
   width: 100%;
@@ -744,7 +745,6 @@ onUnmounted(() => {
   font-size: 0.9rem;
 }
 
-/* Кнопки управления языком и светом */
 .nav-controls {
   display: flex;
   gap: 1.5rem;
@@ -806,22 +806,21 @@ onUnmounted(() => {
   transform-origin: bottom left;
 }
 
-/* Контейнер заголовка выравнивает текст строго по вертикальному центру слева */
 .hero-title-group {
   margin-top: auto;
   margin-bottom: auto;
-  pointer-events: none; /* Пропускает мышь на WebGL холст */
+  pointer-events: none;
 }
 
 .hero-title {
-  font-family: 'ApfelGrotezk-Regular', sans-serif; /* Применение оригинального шрифта */
+  font-family: 'ApfelGrotezk-Regular', sans-serif;
   font-size: clamp(2rem, 4.5vw, 4.5rem);
   font-weight: normal;
   line-height: 1.25;
   margin: 0;
   text-transform: uppercase;
   letter-spacing: -0.01em;
-  color: #f1f1f0; /* Оригинальный цвет текста */
+  color: #f1f1f0;
 }
 
 .scramble-container {
@@ -834,7 +833,6 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* Имя и фамилия - ярко выражены в золотой градиент */
 .client-name {
   font-weight: 600;
   background: linear-gradient(to right, #ffffff, #ffdfa4);
@@ -844,7 +842,7 @@ onUnmounted(() => {
 }
 
 .hero-tags {
-  pointer-events: auto !important; /* Гарантирует доступ к кликам и наведению */
+  pointer-events: auto !important;
   position: relative;
   z-index: 10;
   list-style: none;
@@ -856,14 +854,13 @@ onUnmounted(() => {
   max-width: 650px;
 }
 
-/* --- Анимация плавного появления тегов на оригинальном шрифте --- */
 .hero-tags li {
-  font-family: 'ApfelGrotezk-Regular', sans-serif; /* Применение оригинального шрифта */
+  font-family: 'ApfelGrotezk-Regular', sans-serif;
   font-size: 0.85rem;
   font-weight: 300;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #f1f1f0; /* Оригинальный цвет текста */
+  color: #f1f1f0;
   border: 1px solid rgba(241, 241, 240, 0.08);
   padding: 0.45rem 1.2rem;
   border-radius: 9999px;
@@ -873,15 +870,14 @@ onUnmounted(() => {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* --- Эффект премиум hover свечения, расширения букв на тегах (Прыгающие буквы удалены!) --- */
 .hero-tags li:hover {
   cursor: pointer;
-  color: #ffdfa4; /* Теплый янтарный перелив букв */
-  border-color: rgba(255, 223, 164, 0.45); /* Мягкое золотистое свечение рамки */
+  color: #ffdfa4;
+  border-color: rgba(255, 223, 164, 0.45);
   background-color: rgba(255, 223, 164, 0.04);
   box-shadow: 0 0 20px rgba(255, 223, 164, 0.12);
-  transform: translateY(-3px) scale(1.02); /* Интерактивный подъем и микромасштабирование */
-  letter-spacing: 0.09em; /* Плавное расширение межбуквенного интервала */
+  transform: translateY(-3px) scale(1.02);
+  letter-spacing: 0.09em;
 }
 
 @keyframes staggerFadeUp {
