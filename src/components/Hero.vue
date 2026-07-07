@@ -573,7 +573,7 @@ async function loadFontAssets() {
 
   // 2. Загрузка Montserrat
   try {
-    const response = await fetch('/Montserrat-Regular.ttf')
+    const response = await fetch('/Montserrat-Bold.ttf')
     if (response.ok) {
       const buffer = await response.arrayBuffer()
       const blob = new Blob([buffer], { type: 'font/ttf' })
