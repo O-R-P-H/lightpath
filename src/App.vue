@@ -1,20 +1,17 @@
-<script setup>
-import Hero from './components/Hero.vue'
-</script>
-
 <template>
-  <main>
-    <Hero />
-  </main>
+  <!-- RouterView будет автоматически рендерить SelectionView, CustomHeroView или ReferenceHeroView -->
+  <RouterView />
 </template>
 
 <style>
-/* Сброс базовых стилей для бесшовного полноэкранного отображения */
-body, html {
+/* Глобальные базовые стили, чтобы сбросить дефолтные отступы браузера */
+html, body {
   margin: 0;
   padding: 0;
-  background-color: #050507;
-  width: 100%;
-  height: 100%;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
 }
 </style>
