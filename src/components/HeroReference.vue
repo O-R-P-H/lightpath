@@ -1,5 +1,8 @@
 <template>
-  <div class="hero-wrapper">
+  <div class="hero-wrapper" ref="heroRef">
+    <!-- Фоновый 3D WebGL контейнер (занимает 100% экрана под текстом) -->
+    <div class="webgl-canvas" ref="canvasContainer"></div>
+
     <!-- Основной Херо-блок -->
     <header class="hero-header">
       <h1 class="hero-title">
@@ -73,7 +76,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import * as THREE from 'three'
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 
+const canvasContainer = ref(null)
 const isMenuOpen = ref(false)
 
 const targetTitleLine1 = "The studio of Nikolay"
@@ -141,6 +147,19 @@ watch(isMenuOpen, (isOpen) => {
   }
 })
 
+// Переменные Three.js сценария
+let scene, camera, renderer, modelMesh, animationFrameId
+
+const handleResize = () => {
+  if (!canvasContainer.value || !camera || !renderer) return
+  const width = canvasContainer.value.clientWidth
+  const height = canvasContainer.value.clientHeight
+
+  camera.aspect = width / height
+  camera.updateProjectionMatrix()
+  renderer.setSize(width, height)
+}
+
 onMounted(() => {
   // Включаем резиновый масштаб страницы и переменные на тег <html>
   document.documentElement.classList.add('reference-root-active')
@@ -156,10 +175,99 @@ onMounted(() => {
     }
     runScramble(tag, reactiveWrapper, 750 + index * 120)
   })
+
+  // --- ИНИЦИАЛИЗАЦИЯ THREE.JS ---
+  if (canvasContainer.value) {
+    const width = canvasContainer.value.clientWidth
+    const height = canvasContainer.value.clientHeight
+
+    scene = new THREE.Scene()
+
+    // Настройка камеры
+    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100)
+    camera.position.set(0, 0, 10)
+
+    // Рендерер с поддержкой прозрачности (для сочетания с CSS-фоном)
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    renderer.setSize(width, height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    canvasContainer.value.appendChild(renderer.domElement)
+
+    // --- ДРАМАТИЧЕСКИЙ СВЕТОДИЗАЙН ДЛЯ МОДЕЛИ ---
+    // Мягкий базовый заполняющий свет (под цвет фона)
+    const ambientLight = new THREE.AmbientLight(0x0e0e0f, 1.0)
+    scene.add(ambientLight)
+
+    // Прожектор 1: КРАСНЫЙ (#FF000E) снизу-слева — интенсивность 4.0
+    const redSpotlight = new THREE.DirectionalLight(0xff000e, 4.0)
+    redSpotlight.position.set(-6, -6, 0)
+    scene.add(redSpotlight)
+
+    // Прожектор 2: СВЕРХЧИСТЫЙ БЕЛЫЙ (#FFFFFF) снизу-справа — интенсивность 1.0
+    const whiteSpotlight = new THREE.DirectionalLight(0xffffff, 1.0)
+    whiteSpotlight.position.set(6, -6, 0)
+    scene.add(whiteSpotlight)
+
+    // Загрузка STL модели Родина-Мать
+    const loader = new STLLoader()
+    loader.load('/models/rodina_volgograd.stl', (geometry) => {
+      // Центрируем модель по трем осям, чтобы вращение было идеально ровным
+      geometry.center()
+
+      // Материал модели (аккуратный фасетчатый брутализм, красиво ловящий световые пучки)
+      const material = new THREE.MeshStandardMaterial({
+        color: 0xcccccc,
+        roughness: 0.75,
+        metalness: 0.15,
+        flatShading: true // Flat Shading идеально подчеркивает форму граней при игре света
+      })
+
+      modelMesh = new THREE.Mesh(geometry, material)
+
+      // STL файлы часто экспортируются лежащими на боку — разворачиваем вертикально по оси X
+      modelMesh.rotation.x = -Math.PI / 2
+      modelMesh.position.y = 0.5
+      modelMesh.rotation.z = - 2.5
+
+      // Автоматически рассчитываем масштаб модели (увеличили коэффициент до 5.8 для большего размера)
+      geometry.computeBoundingBox()
+      const size = new THREE.Vector3()
+      geometry.boundingBox.getSize(size)
+      const maxDim = Math.max(size.x, size.y, size.z)
+      const scaleFactor = 6.2 / maxDim // Масштабируем до увеличенного размера на экране
+      modelMesh.scale.set(scaleFactor, scaleFactor, scaleFactor)
+
+      scene.add(modelMesh)
+    })
+
+    // Анимационный цикл
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate)
+
+      if (modelMesh) {
+        // Плавное вращение вокруг вертикальной оси (так как модель повернута по X, крутим по Z)
+        modelMesh.rotation.z += 0.003
+      }
+
+      renderer.render(scene, camera)
+    }
+    animate()
+
+    window.addEventListener('resize', handleResize)
+  }
 })
 
 onUnmounted(() => {
   document.documentElement.classList.remove('reference-root-active')
+  window.removeEventListener('resize', handleResize)
+
+  // Очистка памяти WebGL при уходе со страницы
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+  if (renderer) {
+    renderer.dispose()
+  }
 })
 </script>
 
@@ -180,6 +288,16 @@ onUnmounted(() => {
   color: var(--color-front);
   font-family: 'Apfel Grotezk', sans-serif;
   overflow: hidden;
+}
+
+/* Фоновый холст 3D WebGL сцены */
+.webgl-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Строго под текстом (z-index: 2) */
+  pointer-events: none; /* Пропускает клики на текст и кнопки */
 }
 
 /* Сетка шапки */
