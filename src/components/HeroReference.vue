@@ -15,7 +15,7 @@
       </ul>
     </header>
 
-    <!-- Зафиксированная кнопка "More" внизу справа (прячется под оверлей при его открытии) -->
+    <!-- Зафиксированная кнопка "More" внизу справа (прячется под оверлей) -->
     <a class="link m-vertical more" href="#about">
       <span>More</span>
     </a>
@@ -28,12 +28,12 @@
         @click="toggleMenu"
         @keydown.enter="toggleMenu"
     >
-      <span>{{ isMenuOpen ? 'Close' : 'Menu' }}</span>
+      <span>Menu</span>
     </div>
 
-    <!-- Полноэкранный оверлей навигации (Overlay) -->
+    <!-- Полноэкранный оверлей навигации (Overlay из 3 блоков по референсу) -->
     <nav class="overlay" :class="{ 'open': isMenuOpen }">
-      <!-- Колонка 1: Логотип -->
+      <!-- 1. Логотип (Колонка 1) -->
       <div class="overlay-logo">
         <router-link to="/" class="link m-vertical" @click="toggleMenu">
           <span>The studio of Nikolay</span><br />
@@ -41,10 +41,7 @@
         </router-link>
       </div>
 
-      <!-- Колонка 2: Пустая -->
-      <div class="overlay-empty"></div>
-
-      <!-- Колонка 3: Навигационные ссылки (в точности по вашему CSS из DevTools) -->
+      <!-- 2. Навигационные ссылки (На мобильных - Колонка 2, на десктопе - Колонка 3) -->
       <ul class="overlay-list svelte-1ri0n2j">
         <li>
           <router-link to="/about" class="link m-vertical" @click="toggleMenu">
@@ -68,7 +65,7 @@
         </li>
       </ul>
 
-      <!-- Копирайт внизу справа -->
+      <!-- 3. Копирайт (Фиксирован внизу справа) -->
       <div class="copy m-vertical">© 2026</div>
     </nav>
   </div>
@@ -145,7 +142,7 @@ watch(isMenuOpen, (isOpen) => {
 })
 
 onMounted(() => {
-  // Включаем резиновый размер шрифта и переменные на тег <html>
+  // Включаем резиновый масштаб страницы и переменные на тег <html>
   document.documentElement.classList.add('reference-root-active')
 
   // Плавный запуск анимации перебора символов при загрузке страницы
@@ -254,10 +251,7 @@ onUnmounted(() => {
   }
 }
 
-/*
-  Иерархия слоев в абсолютной точности с оригиналом.
-  More лежит ниже оверлея, Menu/Close лежит выше оверлея.
-*/
+/* Иерархия слоев */
 .more {
   position: fixed;
   right: var(--space-s);
@@ -272,7 +266,7 @@ onUnmounted(() => {
   z-index: 10; /* Находится поверх оверлея */
 }
 
-/* Полноэкранный оверлей */
+/* Полноэкранный оверлей (всегда Grid) */
 .overlay {
   z-index: 5; /* Покрывает кнопку More, но остается под кнопкой Menu/Close */
   background-color: var(--color-back);
@@ -296,7 +290,7 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* Стилизация списка ссылок в меню в точности по вашим свойствам */
+/* Стилизация списка ссылок в меню */
 .overlay-list {
   margin: 0;
   padding: 0;
@@ -324,28 +318,39 @@ onUnmounted(() => {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  /*
-    На десктопе список в точности повторяет свойства из консоли референса:
-    никакого Flexbox, обычное последовательное блочное расположение со сдвигом в 3 колонку.
-  */
+  /* На десктопе список в 3-й колонке выстроен по вертикали */
   .overlay-list {
     grid-column-start: 3;
-    text-align: left; /* Текст выровнен по левому краю внутри третьей колонки (аккуратно левее кнопки) */
+    text-align: left;
+    display: block;
   }
 }
 
 @media (max-width: 759px) {
-  .overlay {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+  /*
+    На мобильных сохраняется оригинальная grid-сетка оверлея.
+  */
+  .overlay-logo {
+    align-self: start;
   }
 
+  /*
+    На мобильных список во 2-й колонке выстроен по горизонтали (в ряд).
+    align-self: start и align-items: flex-start прижимают элементы
+    ровно к верхнему краю сетки, на один уровень с логотипом.
+  */
   .overlay-list {
+    grid-column-start: 2;
+    align-self: start;
     display: flex;
+    flex-direction: row;
     justify-content: center;
-    gap: 1.5rem;
-    align-items: center;
+    gap: var(--space-l);
+    align-items: flex-start;
+  }
+
+  .overlay-list li {
+    min-width: 1em;
   }
 }
 </style>
