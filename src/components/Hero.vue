@@ -46,14 +46,23 @@ function getRussianTag(original) {
 }
 
 // Глобальные переменные сцены
-let scene, camera, renderer, spotlight, lightTarget, dustParticles
-let projectorBody, projectorAssembly
+let scene, camera, renderer, spotlight, lightTarget, dustParticles, wall, floor
+let projectorBody, projectorAssembly, lensDummy
 let beamMesh, beamShaderMat
-let textMesh1, textMesh2 // Невидимые 3D-дубликаты для генерации теней
+let textMeshes1 = [] // Массив копий для утолщения тени 1-й строки
+let textMeshes2 = [] // Массив копий для утолщения тени 2-й строки
 let dimSun, ambientLight
 let animationFrameId
 let startTime = performance.now()
 let isControlLocked = true // Блокировка прожектора на старте
+
+// Переменные для мобильного акселерометра
+let hasInitializedAccelerometer = false
+let neutralBeta = null
+
+// Кэшированная ширина геометрии букв для предотвращения искажений при масштабировании
+let text1GeomWidth = 1
+let text2GeomWidth = 1
 
 // Ссылки на подготовленные Blob URL шрифтов
 let apfelBlobUrl = null
@@ -69,6 +78,11 @@ const targetCameraPos = new THREE.Vector3(0, 0, 9.5)
 
 // Вектор цели для плавного перехода луча к курсору
 const mouseTarget = new THREE.Vector3(initialTargetX, initialTargetY, -2.0)
+
+// Проверка мобильного устройства
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768
+}
 
 // Плавный латинский/кириллический Scramble-эффект
 function scramble(targetText, reactiveRef, delay = 100, duration = 1000) {
@@ -122,13 +136,13 @@ function runGlobalScramble() {
   const isEn = currentLanguage.value === 'EN'
 
   // Безопасное переключение шрифта 3D-сцены
-  if (textMesh1 && textMesh2) {
+  if (textMeshes1.length && textMeshes2.length) {
     const activeFont = isEn
         ? (apfelBlobUrl || '/ApfelGrotezk-Regular.Cf-knoBG.woff')
-        : (montserratBlobUrl || '/Montserrat-Regular.ttf')
+        : (montserratBlobUrl || '/Montserrat-Bold.ttf')
 
-    textMesh1.font = activeFont
-    textMesh2.font = activeFont
+    textMeshes1.forEach(m => m.font = activeFont)
+    textMeshes2.forEach(m => m.font = activeFont)
   }
 
   scramble(isEn ? 'The lighting studio of' : 'Световая студия', textLine1, 100, 1000)
@@ -154,24 +168,39 @@ function onNavHover() {
   hasMouseMoved = false
 }
 
-// Построение невидимого 3D-текста
-function update3DTextGeometry(text, mesh, size) {
-  if (!mesh) return
+// Построение невидимого 3D-текста с сохранением пропорций и интервалов
+function update3DTextGeometry(text, meshes, size, cacheKey) {
+  if (!meshes || meshes.length === 0) return
 
-  mesh.text = text
-  mesh.fontSize = size
-  mesh.sync(() => {
-    if (mesh.material) {
-      mesh.material.colorWrite = false
-      mesh.material.depthWrite = true
-    }
-    syncTextPositionAndScale()
+  meshes.forEach((mesh) => {
+    mesh.text = text.toUpperCase()
+    mesh.fontSize = size
+    mesh.letterSpacing = -0.02
+
+    mesh.sync(() => {
+      if (mesh.material) {
+        mesh.material.colorWrite = false
+        mesh.material.depthWrite = true
+      }
+      if (mesh.geometry) {
+        mesh.geometry.computeBoundingBox()
+        const bbox = mesh.geometry.boundingBox
+        if (bbox) {
+          const w = bbox.max.x - bbox.min.x
+          if (w > 0) {
+            if (cacheKey === 1) text1GeomWidth = w
+            if (cacheKey === 2) text2GeomWidth = w
+          }
+        }
+      }
+      syncTextPositionAndScale()
+    })
   })
 }
 
 // Математический пересчет координат DOM-элементов в 3D пространство WebGL
 function syncTextPositionAndScale() {
-  if (!camera || !renderer || !textMesh1 || !textMesh2 || !line1Ref.value || !line2Ref.value) return
+  if (!camera || !renderer || !textMeshes1.length || !textMeshes2.length || !line1Ref.value || !line2Ref.value) return
 
   const width = heroContainer.value.clientWidth
   const height = heroContainer.value.clientHeight
@@ -180,14 +209,15 @@ function syncTextPositionAndScale() {
   const rect2 = line2Ref.value.getBoundingClientRect()
 
   const camZ = camera.position.z
-  const textZ = -1.8
+  // Плоскость текста максимально близко к стене (z = -4.0) для точного совпадения тени
+  const textZ = -3.6
   const dist = camZ - textZ
   const vFov = (camera.fov * Math.PI) / 180
   const worldHeight = 2 * Math.tan(vFov / 2) * dist
   const worldWidth = worldHeight * camera.aspect
 
-  const mapRectToMesh = (rect, mesh) => {
-    if (rect.width === 0 || rect.height === 0) return
+  const mapRectToMeshes = (rect, meshes, geomWidth, size) => {
+    if (rect.width === 0 || rect.height === 0 || !meshes || meshes.length === 0) return
 
     const pixelX = rect.left + rect.width / 2
     const pixelY = rect.top + rect.height / 2
@@ -198,27 +228,34 @@ function syncTextPositionAndScale() {
     const worldX = ndcX * (worldWidth / 2)
     const worldY = ndcY * (worldHeight / 2)
 
-    mesh.position.set(worldX, worldY, textZ)
+    const isEn = currentLanguage.value === 'EN'
+    // Сверхплотное смещение (0.8%), чтобы тени слились в монолитный Bold без паразитного контура
+    const offset = isEn ? (size * 0.008) : 0
 
-    const meshWidth3D = (rect.width / width) * worldWidth
-    const meshHeight3D = (rect.height / height) * worldHeight
+    const offsets = [
+      [0, 0],
+      [-offset, 0],
+      [offset, 0],
+      [0, -offset],
+      [0, offset]
+    ]
 
-    if (mesh.geometry) {
-      mesh.geometry.computeBoundingBox()
-      const bbox = mesh.geometry.boundingBox
-      if (bbox) {
-        const geomWidth = bbox.max.x - bbox.min.x
-        const geomHeight = bbox.max.y - bbox.min.y
+    meshes.forEach((mesh, idx) => {
+      const ox = offsets[idx][0]
+      const oy = offsets[idx][1]
+      mesh.position.set(worldX + ox, worldY + oy, textZ)
 
-        if (geomWidth > 0 && geomHeight > 0) {
-          mesh.scale.set(meshWidth3D / geomWidth, meshHeight3D / geomHeight, 1)
-        }
+      const meshWidth3D = (rect.width / width) * worldWidth
+
+      if (geomWidth > 0) {
+        const scaleFactor = meshWidth3D / geomWidth
+        mesh.scale.set(scaleFactor, scaleFactor, 1)
       }
-    }
+    });
   }
 
-  mapRectToMesh(rect1, textMesh1)
-  mapRectToMesh(rect2, textMesh2)
+  mapRectToMeshes(rect1, textMeshes1, text1GeomWidth, 0.35)
+  mapRectToMeshes(rect2, textMeshes2, text2GeomWidth, 0.85)
 }
 
 function createBeamTexture() {
@@ -254,14 +291,14 @@ function initThree() {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-  // Стенка на заднем плане
+  // Стенка на заднем плане (сохранены ваши параметры цвета, шероховатости и металла)
   const wallGeo = new THREE.PlaneGeometry(35, 20)
   const wallMat = new THREE.MeshStandardMaterial({
-    color: 0x0d0d10,
-    roughness: 0.8,
-    metalness: 0.1
+    color: 0x000000,
+    roughness: 1,
+    metalness: 0.0
   })
-  const wall = new THREE.Mesh(wallGeo, wallMat)
+  wall = new THREE.Mesh(wallGeo, wallMat)
   wall.position.z = -4.0
   wall.receiveShadow = true
   scene.add(wall)
@@ -273,7 +310,7 @@ function initThree() {
     roughness: 0.9,
     metalness: 0.1
   })
-  const floor = new THREE.Mesh(floorGeo, floorMat)
+  floor = new THREE.Mesh(floorGeo, floorMat)
   floor.rotation.x = -Math.PI / 2
   floor.position.y = -3.2
   floor.position.z = -1
@@ -327,17 +364,21 @@ function initThree() {
   lens.position.z = -0.39
   projectorBody.add(lens)
 
-  // SpotLight
+  // Маркер для отслеживания мировых координат выхода луча
+  lensDummy = new THREE.Object3D()
+  lensDummy.position.set(0, 0, -0.4)
+  projectorBody.add(lensDummy)
+
+  // SpotLight (вынесен в корень сцены для корректного расчета теней)
   spotlight = new THREE.SpotLight(0xfff8ee, 0, 18, Math.PI / 6.5, 0.5, 0.0)
   spotlight.castShadow = true
   spotlight.shadow.mapSize.width = 2048
   spotlight.shadow.mapSize.height = 2048
   spotlight.shadow.camera.near = 1.0
   spotlight.shadow.camera.far = 15
-  spotlight.shadow.bias = -0.001
-  // Настройка радиуса для четких и плотных теней
-  spotlight.shadow.radius = 2.2
-  projectorBody.add(spotlight)
+  spotlight.shadow.bias = -0.0005
+  spotlight.shadow.radius = 1.5 // Уменьшенный радиус размытия для соответствия четкости шрифта
+  scene.add(spotlight)
 
   lightTarget = new THREE.Object3D()
   lightTarget.position.set(initialTargetX, initialTargetY, -2.0)
@@ -388,24 +429,24 @@ function initThree() {
   beamMesh.position.z = -0.35
   projectorBody.add(beamMesh)
 
-  // --- ИНИЦИАЛИЗАЦИЯ TROIKA-THREE-TEXT (С ДОБАВЛЕНИЕМ ТОЛЩИНЫ ШРИФТА) ---
-  textMesh1 = new Text()
-  textMesh1.anchorX = 'center'
-  textMesh1.anchorY = 'middle'
-  textMesh1.castShadow = true
-  textMesh1.receiveShadow = true
-  textMesh1.strokeWidth = 0.04 // Плотные жирные буквы для массивных теней
-  textMesh1.strokeColor = 0xffffff
-  scene.add(textMesh1)
+  // --- ИНИЦИАЛИЗАЦИЯ TROIKA-THREE-TEXT (Массивы клонов для 5-точечного мульти-сэмплинга) ---
+  for (let i = 0; i < 5; i++) {
+    const t1 = new Text()
+    t1.anchorX = 'center'
+    t1.anchorY = 'middle'
+    t1.castShadow = true
+    t1.receiveShadow = true
+    scene.add(t1)
+    textMeshes1.push(t1)
 
-  textMesh2 = new Text()
-  textMesh2.anchorX = 'center'
-  textMesh2.anchorY = 'middle'
-  textMesh2.castShadow = true
-  textMesh2.receiveShadow = true
-  textMesh2.strokeWidth = 0.04
-  textMesh2.strokeColor = 0xffffff
-  scene.add(textMesh2)
+    const t2 = new Text()
+    t2.anchorX = 'center'
+    t2.anchorY = 'middle'
+    t2.castShadow = true
+    t2.receiveShadow = true
+    scene.add(t2)
+    textMeshes2.push(t2)
+  }
 
   createDustParticles()
   adjustLayout()
@@ -446,6 +487,8 @@ function createDustParticles() {
 function onMouseMove(event) {
   if (isControlLocked) return
   if (!heroContainer.value || !lightTarget) return
+  // Отключаем следование за мышью на мобильных устройствах
+  if (isMobileDevice()) return
 
   if (!hasMouseMoved) {
     hasMouseMoved = true
@@ -463,13 +506,73 @@ function onMouseLeave() {
   hasMouseMoved = false
 }
 
-// Отслеживание изменений текста
+// Запрос и инициализация акселерометра (iOS Safari + Android)
+function initAccelerometer() {
+  if (hasInitializedAccelerometer) return
+  hasInitializedAccelerometer = true
+
+  // Специфика iOS 13+ (Safari): требуется явный асинхронный запрос прав в контексте User Gesture
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+        .then(permissionState => {
+          if (permissionState === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation)
+          }
+        })
+        .catch(e => {
+          console.warn("DeviceOrientation permission deferred or rejected", e)
+          hasInitializedAccelerometer = false // Сброс флага для возможности повторной инициализации при клике
+        })
+  } else {
+    // Android и старые версии iOS
+    window.addEventListener('deviceorientation', handleOrientation)
+  }
+}
+
+// Слушатель касания для Safari на мобильных устройствах
+function onDeviceTouch() {
+  if (isMobileDevice()) {
+    initAccelerometer()
+  }
+}
+
+// Обработчик наклона устройства (реализует обратное отклонение)
+function handleOrientation(event) {
+  if (isControlLocked || !lightTarget) return
+
+  const beta = event.beta   // Наклон вперед-назад [-180, 180]
+  const gamma = event.gamma // Наклон влево-вправо [-90, 90]
+
+  if (beta === null || gamma === null) return
+
+  // Калибровка нейтрального положения при удержании телефона под наклоном при запуске
+  if (neutralBeta === null) {
+    neutralBeta = (beta > 30 && beta < 80) ? beta : 60
+  }
+
+  const deltaGamma = gamma
+  const deltaBeta = beta - neutralBeta
+
+  const maxDeflectionX = 6.0
+  const maxDeflectionY = 4.0
+
+  const clamp = (val, min, max) => Math.max(min, Math.min(max, val))
+
+  // Рассчитываем отклонение в ПРОТИВОПОЛОЖНУЮ наклону сторону (знак минус)
+  const offsetX = clamp(-deltaGamma * 0.2, -maxDeflectionX, maxDeflectionX)
+  const offsetY = clamp(-deltaBeta * 0.15, -maxDeflectionY, maxDeflectionY)
+
+  hasMouseMoved = true
+  mouseTarget.set(initialTargetX + offsetX, initialTargetY + offsetY, -2.0)
+}
+
+// Отслеживание изменений текста (с приведением к UPPERCASE)
 watch(textLine1, (newText) => {
-  update3DTextGeometry(newText, textMesh1, 0.35)
+  update3DTextGeometry(newText.toUpperCase(), textMeshes1, 0.35, 1)
 })
 
 watch(textLine2, (newText) => {
-  update3DTextGeometry(newText, textMesh2, 0.85)
+  update3DTextGeometry(newText.toUpperCase(), textMeshes2, 0.85, 2)
 })
 
 function adjustLayout() {
@@ -505,9 +608,18 @@ function animate() {
     lightTarget.position.y += (-5.0 - lightTarget.position.y) * 0.05
     lightTarget.position.z += (3.0 - lightTarget.position.z) * 0.05
 
+    // Плавное переключение цвета стены и пола на 0x808080 при включении света (скорость 0.005 сохранены)
+    if (wall) {
+      wall.material.color.lerp(new THREE.Color(0x808080), 0.005)
+    }
+    if (floor) {
+      floor.material.color.lerp(new THREE.Color(0x808080), 0.005)
+    }
+
   } else {
-    dimSun.intensity += (0.2 - dimSun.intensity) * 0.05
-    ambientLight.intensity += (0.04 - ambientLight.intensity) * 0.05
+    // Поднимаем фоновое освещение до 0.52 и 0.55, чтобы сделать тени блеклыми и ненавязчивыми
+    dimSun.intensity += (0.55 - dimSun.intensity) * 0.05
+    ambientLight.intensity += (0.52 - ambientLight.intensity) * 0.05
 
     if (currentIntensity < targetIntensity) {
       currentIntensity += (targetIntensity - currentIntensity) * 0.03
@@ -525,6 +637,14 @@ function animate() {
     lightTarget.position.x += (targetX - lightTarget.position.x) * 0.05
     lightTarget.position.y += (targetY - lightTarget.position.y) * 0.05
     lightTarget.position.z += (targetZ - lightTarget.position.z) * 0.05
+
+    // Плавный возврат цвета стены и пола к исходному темному оттенку при выключении света
+    if (wall) {
+      wall.material.color.lerp(new THREE.Color(0x0d0d10), 0.05)
+    }
+    if (floor) {
+      floor.material.color.lerp(new THREE.Color(0x0a0a0c), 0.05)
+    }
   }
 
   camera.position.x += (targetCameraPos.x - camera.position.x) * 0.05
@@ -533,6 +653,13 @@ function animate() {
 
   if (projectorBody && lightTarget) {
     projectorBody.lookAt(lightTarget.position)
+  }
+
+  // Обновляем позицию источника света из мировых координат линзы прожектора
+  if (spotlight && lensDummy) {
+    const lensWorldPos = new THREE.Vector3()
+    lensDummy.getWorldPosition(lensWorldPos)
+    spotlight.position.copy(lensWorldPos)
   }
 
   syncTextPositionAndScale()
@@ -557,7 +684,7 @@ function animate() {
   renderer.render(scene, camera)
 }
 
-// Надежная последовательная предзагрузка шрифтов из папки public
+// Надежная последовательная предзагрузка шрифтов
 async function loadFontAssets() {
   // 1. Загрузка Apfel Grotezk
   try {
@@ -571,7 +698,7 @@ async function loadFontAssets() {
     console.warn("Failed to load ApfelGrotezk font", e)
   }
 
-  // 2. Загрузка Montserrat
+  // 2. Загрузка Montserrat-Bold
   try {
     const response = await fetch('/Montserrat-Bold.ttf')
     if (response.ok) {
@@ -586,21 +713,22 @@ async function loadFontAssets() {
 
 onMounted(() => {
   initThree()
-  animate() // Благодаря синтаксису function() {} вызов теперь полностью безопасен и запущен на выполнение
+  animate()
 
   // Гарантируем полную загрузку ресурсов до отрисовки
   loadFontAssets().finally(() => {
     const initialFont = currentLanguage.value === 'EN'
         ? (apfelBlobUrl || '/ApfelGrotezk-Regular.Cf-knoBG.woff')
-        : (montserratBlobUrl || '/Montserrat-Regular.ttf')
+        : (montserratBlobUrl || '/Montserrat-Bold.ttf')
 
-    if (textMesh1 && textMesh2) {
-      textMesh1.font = initialFont
-      textMesh2.font = initialFont
+    if (textMeshes1.length && textMeshes2.length) {
+      textMeshes1.forEach(m => m.font = initialFont)
+      textMeshes2.forEach(m => m.font = initialFont)
     }
 
-    update3DTextGeometry(textLine1.value, textMesh1, 0.35)
-    update3DTextGeometry(textLine2.value, textMesh2, 0.85)
+    // Первичная инициализация с принудительным uppercase
+    update3DTextGeometry(textLine1.value.toUpperCase(), textMeshes1, 0.35, 1)
+    update3DTextGeometry(textLine2.value.toUpperCase(), textMeshes2, 0.85, 2)
 
     // Запуск Scramble-эффектов
     runGlobalScramble()
@@ -616,13 +744,18 @@ onMounted(() => {
 onUnmounted(() => {
   cancelAnimationFrame(animationFrameId)
   window.removeEventListener('resize', adjustLayout)
+  window.removeEventListener('deviceorientation', handleOrientation)
 
   // Очистка Blob-адресов
   if (apfelBlobUrl) URL.revokeObjectURL(apfelBlobUrl)
   if (montserratBlobUrl) URL.revokeObjectURL(montserratBlobUrl)
 
-  if (textMesh1 && typeof textMesh1.dispose === 'function') textMesh1.dispose()
-  if (textMesh2 && typeof textMesh2.dispose === 'function') textMesh2.dispose()
+  textMeshes1.forEach(m => {
+    if (typeof m.dispose === 'function') m.dispose()
+  })
+  textMeshes2.forEach(m => {
+    if (typeof m.dispose === 'function') m.dispose()
+  })
 
   if (renderer) renderer.dispose()
   scene.traverse((object) => {
@@ -641,12 +774,15 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- События onTouchStart и onClick инициализируют акселерометр по первому тачу пользователя -->
   <header
       ref="heroContainer"
       class="hero-header"
-      :class="{ 'light-theme': isGlobalLightOn }"
+      :class="{ 'light-theme': isGlobalLightOn, 'lang-ru': currentLanguage === 'RU' }"
       @mousemove="onMouseMove"
       @mouseleave="onMouseLeave"
+      @touchstart="onDeviceTouch"
+      @click="onDeviceTouch"
   >
     <div class="canvas-background">
       <canvas ref="canvas"></canvas>
@@ -721,6 +857,13 @@ onUnmounted(() => {
   src: url('./ApfelGrotezk-Regular.BWvmwAfX.woff2') format('woff2'),
   url('./ApfelGrotezk-Regular.Cf-knoBG.woff') format('woff');
   font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('/Montserrat-Bold.ttf') format('truetype');
+  font-weight: bold;
   font-style: normal;
 }
 
@@ -857,6 +1000,16 @@ onUnmounted(() => {
   color: #f1f1f0;
   text-shadow: none;
   -webkit-text-stroke: none;
+}
+
+/* Стилизация под Montserrat для русской локализации */
+.lang-ru .hero-title,
+.lang-ru .client-name,
+.lang-ru .hero-tags li,
+.lang-ru .nav-item,
+.lang-ru .control-btn {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: bold;
 }
 
 .scramble-container {

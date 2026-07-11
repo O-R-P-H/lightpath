@@ -5,7 +5,7 @@
       <div class="links-grid">
         <router-link to="/custom" class="nav-link">
           <span>Вариант 1</span>
-          <span class="subtitle">Кастомный дизайн</span>
+          <span class="subtitle">Наша идея дизайн</span>
         </router-link>
         <router-link to="/reference" class="nav-link">
           <span>Вариант 2</span>
