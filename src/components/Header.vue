@@ -18,9 +18,9 @@
       </ul>
     </header>
 
-    <!-- Зафиксированная кнопка "More" внизу справа (прячется под оверлей) -->
+    <!-- Зафиксированная кнопка "Подробнее" внизу справа (прячется под оверлей) -->
     <a class="link m-vertical more" href="#about">
-      <span>More</span>
+      <span>Подробнее</span>
     </a>
 
     <!-- Зафиксированная кнопка "Menu/Close" вверху справа -->
@@ -31,7 +31,7 @@
         @click="toggleMenu"
         @keydown.enter="toggleMenu"
     >
-      <span>Menu</span>
+      <span>Меню</span>
     </div>
 
     <!-- Полноэкранный оверлей навигации (Overlay из 3 блоков по референсу) -->
@@ -39,8 +39,8 @@
       <!-- 1. Логотип (Колонка 1) -->
       <div class="overlay-logo">
         <router-link to="/" class="link m-vertical" @click="toggleMenu">
-          <span>The studio of Nikolay</span><br />
-          <span>Matsnev</span>
+          <span>Студия Николая</span><br />
+          <span>Мацнева</span>
         </router-link>
       </div>
 
@@ -77,17 +77,16 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as THREE from 'three'
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 
 const canvasContainer = ref(null)
 const isMenuOpen = ref(false)
 
-const targetTitleLine1 = "The studio of Nikolay"
-const targetTitleLine2 = "Matsnev"
+const targetTitleLine1 = "Студия Николая"
+const targetTitleLine2 = "Мацнева"
 
 const targetTags = [
-  'Lighting', 'Design', 'Architecture', 'Atmosphere',
-  'Concept', 'Engineering', 'Art', 'Lightscapes', 'Impact'
+  'Светодизайн', 'Дизайн', 'Архитектура', 'Атмосфера',
+  'Концепт', 'Инженерия', 'Искусство', 'Пространства', 'Влияние'
 ]
 
 // Текстовые переменные для анимации главного экрана
@@ -95,13 +94,14 @@ const titleLine1 = ref("")
 const titleLine2 = ref("")
 const scrambledTags = ref(targetTags.map(() => ""))
 
-// Текстовые переменные для анимации ссылок в меню
-const menuAbout = ref("About")
-const menuGallery = ref("Gallery")
-const menuContacts = ref("Contacts")
-const menuProjects = ref("Projects")
+// Текстовые переменные для анимации ссылок в меню на русском
+const menuAbout = ref("Обо мне")
+const menuGallery = ref("Галерея")
+const menuContacts = ref("Контакты")
+const menuProjects = ref("Проекты")
 
-const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_*?@#$%+=-"
+// Кириллические символы для анимации
+const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
 
 // Интервальный алгоритм с поочередным открытием букв
 const runScramble = (targetText, reactiveRef, delay = 0) => {
@@ -140,10 +140,10 @@ const toggleMenu = () => {
 // Эффект расшифровки пунктов меню при его открытии
 watch(isMenuOpen, (isOpen) => {
   if (isOpen) {
-    runScramble("About", menuAbout, 100)
-    runScramble("Gallery", menuGallery, 220)
-    runScramble("Contacts", menuContacts, 340)
-    runScramble("Projects", menuProjects, 460)
+    runScramble("Обо мне", menuAbout, 100)
+    runScramble("Галерея", menuGallery, 220)
+    runScramble("Контакты", menuContacts, 340)
+    runScramble("Проекты", menuProjects, 460)
   }
 })
 
@@ -193,8 +193,7 @@ onMounted(() => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     canvasContainer.value.appendChild(renderer.domElement)
 
-    // --- ДРАМАТИЧЕСКИЙ СВЕТОДИЗАЙН ДЛЯ МОДЕЛИ ---
-    // Мягкий базовый заполняющий свет (под цвет фона)
+    // --- ХУДОЖЕСТВЕННЫЙ СВЕТОДИЗАЙН ДЛЯ МОДЕЛИ ---
     const ambientLight = new THREE.AmbientLight(0x0e0e0f, 1.0)
     scene.add(ambientLight)
 
@@ -208,45 +207,25 @@ onMounted(() => {
     whiteSpotlight.position.set(6, -6, 0)
     scene.add(whiteSpotlight)
 
-    // Загрузка STL модели Родина-Мать
-    const loader = new STLLoader()
-    loader.load('/models/rodina_volgograd.stl', (geometry) => {
-      // Центрируем модель по трем осям, чтобы вращение было идеально ровным
-      geometry.center()
+    /*
+      --- СЮДА МОЖНО ИМПОРТИРОВАТЬ ВАШУ НОВУЮ МОДЕЛЬ ---
+      Например, используя GLTFLoader:
 
-      // Материал модели (аккуратный фасетчатый брутализм, красиво ловящий световые пучки)
-      const material = new THREE.MeshStandardMaterial({
-        color: 0xcccccc,
-        roughness: 0.75,
-        metalness: 0.15,
-        flatShading: true // Flat Shading идеально подчеркивает форму граней при игре света
+      import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+      const loader = new GLTFLoader()
+      loader.load('/models/my_new_model.gltf', (gltf) => {
+         modelMesh = gltf.scene
+         scene.add(modelMesh)
       })
-
-      modelMesh = new THREE.Mesh(geometry, material)
-
-      // STL файлы часто экспортируются лежащими на боку — разворачиваем вертикально по оси X
-      modelMesh.rotation.x = -Math.PI / 2
-      modelMesh.position.y = 0.5
-      modelMesh.rotation.z = - 2.5
-
-      // Автоматически рассчитываем масштаб модели (увеличили коэффициент до 5.8 для большего размера)
-      geometry.computeBoundingBox()
-      const size = new THREE.Vector3()
-      geometry.boundingBox.getSize(size)
-      const maxDim = Math.max(size.x, size.y, size.z)
-      const scaleFactor = 6.2 / maxDim // Масштабируем до увеличенного размера на экране
-      modelMesh.scale.set(scaleFactor, scaleFactor, scaleFactor)
-
-      scene.add(modelMesh)
-    })
+    */
 
     // Анимационный цикл
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate)
 
       if (modelMesh) {
-        // Плавное вращение вокруг вертикальной оси (так как модель повернута по X, крутим по Z)
-        modelMesh.rotation.z += 0.003
+        // Плавное вращение вокруг вертикальной оси Y
+        modelMesh.rotation.y += 0.003
       }
 
       renderer.render(scene, camera)
@@ -272,21 +251,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Локальное подключение шрифта .woff */
-@font-face {
-  font-family: 'Apfel Grotezk';
-  src: url('/fonts/ApfelGrotezk-Regular.woff') format('woff');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* Подключаем современный шрифт Inter с Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
 .hero-wrapper {
   position: relative;
   min-height: 100vh;
   background-color: var(--color-back);
   color: var(--color-front);
-  font-family: 'Apfel Grotezk', sans-serif;
+  font-family: 'Inter', sans-serif !important;
   overflow: hidden;
 }
 
@@ -316,17 +289,23 @@ onUnmounted(() => {
   margin: 0;
   padding: 0;
   font-size: 1rem; /* Масштабируется динамически через VW */
-  font-weight: 400;
+  font-weight: 400; /* Вернули исходную толщину Regular */
   color: #fff;
   mix-blend-mode: difference;
   z-index: 2;
   pointer-events: none;
-  letter-spacing: -.04em;
+  letter-spacing: -.02em; /* Чистая и аккуратная плотность */
+  word-spacing: 0.12em; /* Свободное расстояние между словами */
   line-height: 1;
 }
 
 .hero-list {
   list-style: none;
+}
+
+/* Увеличенный вертикальный отступ между тегами */
+.hero-list li {
+  margin-bottom: 0.18rem;
 }
 
 /* Стили навигации и вертикального текста */
@@ -442,6 +421,11 @@ onUnmounted(() => {
     text-align: left;
     display: block;
   }
+
+  /* Увеличенные отступы между li в меню на десктопе */
+  .overlay-list li {
+    margin-bottom: 0.25rem;
+  }
 }
 
 @media (max-width: 759px) {
@@ -484,6 +468,9 @@ html.reference-root-active {
   font-size: 7.5vw !important;
   line-height: 1 !important;
 
+  /* Принудительно перебиваем шрифт на Inter для всех дочерних элементов */
+  font-family: 'Inter', sans-serif !important;
+
   /* Передаем переменные глобально */
   --space-s: .2rem;
   --space-m: .66rem;
@@ -503,5 +490,6 @@ html.reference-root-active body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  font-family: 'Inter', sans-serif !important;
 }
 </style>
