@@ -3,6 +3,7 @@
     <!-- Подключаем переиспользуемый хедер навигации -->
     <Header />
 
+    <!-- Секция "Обо мне" -->
     <section id="about" class="about-section">
       <!-- Сетка заголовков (дублирует структуру первого экрана) -->
       <div class="about-grid-header">
@@ -15,13 +16,16 @@
 
       <!-- Контентная область -->
       <div class="about-content" v-if="!loading">
-        <!-- Левая текстовая колонка, получаемая из Directus -->
+        <!-- Левая текстовая колонка, получаемая из Directus (аккуратный мелкий текст) -->
         <div class="text-container" v-html="textAbout"></div>
 
-        <!-- Правая колонка: Портрет Николая Мацнева из Directus -->
-        <div class="portrait-container" v-if="photoUrl">
-          <img :src="photoUrl" alt="Николай Мацнев" class="portrait-img" />
-        </div>
+        <!-- Абсолютно позиционированный портрет в правом нижнем углу -->
+        <img
+            v-if="photoUrl"
+            :src="photoUrl"
+            alt="Николай Мацнев"
+            class="portrait-img"
+        />
       </div>
 
       <!-- Лоадер на время загрузки данных из CMS -->
@@ -46,12 +50,21 @@ const fetchAboutData = async () => {
     if (response.ok) {
       const { data } = await response.json()
 
-      // Записываем HTML-текст
+      // Записываем HTML-текст из CMS
       textAbout.value = data.text_about
 
-      // Формируем абсолютную ссылку на изображение в Directus
+      // Умный парсер путей изображений для локалхоста и продакшена
       if (data.photo_about) {
-        photoUrl.value = `https://lightcms.tsukawa.ru/assets/${data.photo_about}`
+        const path = data.photo_about
+
+        // Если путь уже является полной ссылкой, записываем как есть
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+          photoUrl.value = path
+        } else {
+          // Если путь относительный (/assets/...), принудительно подставляем домен CMS
+          const cleanPath = path.startsWith('/') ? path.slice(1) : path
+          photoUrl.value = `https://lightcms.tsukawa.ru/${cleanPath}`
+        }
       }
     }
   } catch (error) {
@@ -90,9 +103,10 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
+  min-height: 100vh;
 }
 
-/* Сетка заголовка секции */
+/* Сетка заголовка секции (идентична шапке) */
 .about-grid-header {
   display: grid;
   grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr);
@@ -103,7 +117,7 @@ onUnmounted(() => {
 .about-main-title, .about-sec-title {
   margin: 0;
   padding: 0;
-  font-size: 0.72rem;
+  font-size: 0.72rem; /* Оригинальный мелкий бруталистичный размер хедера */
   font-weight: 400;
   color: #fff;
   letter-spacing: -.04em;
@@ -122,79 +136,35 @@ onUnmounted(() => {
 
 /* Контентная область */
 .about-content {
-  display: grid;
-  grid-template-columns: 1fr;
   position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: var(--space-m);
   flex-grow: 1;
 }
 
-@media (min-width: 1024px) {
-  .about-content {
-    grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr);
-    gap: var(--space-m);
-  }
-}
-
-/* Глубокая стилизация динамического HTML из Directus */
 .text-container {
-  max-width: 100%;
-  z-index: 2;
+  width: 100%;
   position: relative;
+  z-index: 2;
 }
 
 @media (min-width: 1024px) {
   .text-container {
-    max-width: 90%;
+    /* Ограничиваем ширину текста слева, оставляя правую часть для крупного портрета */
+    max-width: 65%;
   }
 }
 
-/* Абзацы текста */
-.text-container :deep(p) {
-  font-size: 1.1rem;
-  font-weight: 300;
-  line-height: 1.5;
-  letter-spacing: -0.01em;
-  word-spacing: 0.12em;
-  margin: 0 0 1.5rem 0;
-  opacity: 0.9;
-}
-
-/* Цитаты */
-.text-container :deep(blockquote),
-.text-container :deep(p:first-of-type) {
-  font-size: 1.25rem;
-  font-weight: 400;
-  line-height: 1.4;
-  margin-bottom: 2rem;
-}
-
-/* Маркированные списки */
-.text-container :deep(ul) {
-  list-style: none;
-  margin: 0 0 2rem 0;
-  padding: 0;
-}
-
-.text-container :deep(li) {
-  font-size: 1.1rem;
-  font-weight: 300;
-  line-height: 1.5;
-  margin-bottom: 0.8rem;
-  opacity: 0.9;
-}
-
-/* Изображение портрета */
-.portrait-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
+/*
+  Абсолютное позиционирование портрета.
+  Он всегда прижат к нижнему правому углу, не мешая тексту.
+*/
 .portrait-img {
   position: absolute;
   bottom: 0;
   right: 0;
-  max-height: 80vh;
+  height: 90vh; /* Масштабный величественный портрет по макету */
   width: auto;
   object-fit: contain;
   pointer-events: none;
@@ -203,8 +173,8 @@ onUnmounted(() => {
 
 @media (max-width: 1023px) {
   .portrait-img {
-    max-height: 50vh;
-    opacity: 0.25;
+    height: 45vh;
+    opacity: 0.25; /* Полупрозрачный фон на телефонах во избежание перекрытия */
   }
 }
 
@@ -225,6 +195,48 @@ onUnmounted(() => {
 </style>
 
 <style>
+/*
+  ГЛОБАЛЬНЫЙ БЛОК СТИЛЕЙ (Unscoped)
+  Гарантирует точный мелкий размер текста из Directus (v-html) на любых версиях компиляторов
+*/
+.text-container p {
+  font-size: 15px !important;
+  font-weight: 300 !important;
+  line-height: 1.6 !important;
+  letter-spacing: -0.01em !important;
+  word-spacing: 0.12em !important;
+  margin: 0 0 1.2rem 0 !important;
+  color: #f1f1f0 !important;
+  opacity: 0.85 !important;
+}
+
+/* Стилизация цитат и вводного текста из CMS (18px) */
+.text-container blockquote,
+.text-container p:first-of-type {
+  font-size: 18px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 1.8rem !important;
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* Маркированные списки */
+.text-container ul {
+  list-style: none !important;
+  margin: 0 0 1.8rem 0 !important;
+  padding: 0 !important;
+}
+
+.text-container li {
+  font-size: 15px !important;
+  font-weight: 300 !important;
+  line-height: 1.6 !important;
+  margin-bottom: 0.6rem !important;
+  color: #f1f1f0 !important;
+  opacity: 0.85 !important;
+}
+
 /* Резиновый масштаб страницы и передача глобальных переменных */
 html.reference-root-active {
   scroll-behavior: smooth;
