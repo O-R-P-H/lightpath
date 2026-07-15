@@ -39,8 +39,8 @@
       <!-- 1. Логотип (Колонка 1) -->
       <div class="overlay-logo">
         <router-link to="/" class="link m-vertical" @click="toggleMenu">
-          <span>Студия Николая</span><br />
-          <span>Мацнева</span>
+          <span>Студия светового дизайна</span><br />
+          <span>Мацнева Николая</span>
         </router-link>
       </div>
 
