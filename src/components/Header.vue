@@ -1,29 +1,6 @@
 <template>
-  <div class="hero-wrapper" ref="heroRef">
-    <!-- Фоновый 3D WebGL контейнер (занимает 100% экрана под текстом) -->
-    <div class="webgl-canvas" ref="canvasContainer"></div>
-
-    <!-- Основной Херо-блок -->
-    <header class="hero-header">
-      <h1 class="hero-title">
-        <span class="scramble-line">{{ titleLine1 }}</span>
-        <br />
-        <span class="scramble-line">{{ titleLine2 }}</span>
-      </h1>
-
-      <ul class="hero-list">
-        <li v-for="(tag, index) in scrambledTags" :key="index">
-          {{ tag }}
-        </li>
-      </ul>
-    </header>
-
-    <!-- Зафиксированная кнопка "Подробнее" внизу справа (прячется под оверлей) -->
-    <a class="link m-vertical more" href="#about">
-      <span>Подробнее</span>
-    </a>
-
-    <!-- Зафиксированная кнопка "Menu/Close" вверху справа -->
+  <div>
+    <!-- Зафиксированная кнопка "Меню" вверху справа -->
     <div
         class="link m-vertical toggle"
         role="button"
@@ -34,7 +11,7 @@
       <span>Меню</span>
     </div>
 
-    <!-- Полноэкранный оверлей навигации (Overlay из 3 блоков по референсу) -->
+    <!-- Полноэкранный оверлей навигации (Overlay из 3 блоков) -->
     <nav class="overlay" :class="{ 'open': isMenuOpen }">
       <!-- 1. Логотип (Колонка 1) -->
       <div class="overlay-logo">
@@ -44,11 +21,19 @@
         </router-link>
       </div>
 
-      <!-- 2. Навигационные ссылки (На мобильных - Колонка 2, на десктопе - Колонка 3) -->
+      <!-- 2. Пустая колонка для сетки -->
+      <div class="overlay-empty"></div>
+
+      <!-- 3. Навигационные ссылки -->
       <ul class="overlay-list svelte-1ri0n2j">
         <li>
           <router-link to="/about" class="link m-vertical" @click="toggleMenu">
             <span>{{ menuAbout }}</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/project-template" class="link m-vertical" @click="toggleMenu">
+            <span>{{ menuProjects }}</span>
           </router-link>
         </li>
         <li>
@@ -61,11 +46,6 @@
             <span>{{ menuContacts }}</span>
           </router-link>
         </li>
-        <li>
-          <router-link to="/project-template" class="link m-vertical" @click="toggleMenu">
-            <span>{{ menuProjects }}</span>
-          </router-link>
-        </li>
       </ul>
 
       <!-- 3. Копирайт (Фиксирован внизу справа) -->
@@ -75,32 +55,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import * as THREE from 'three'
+import { ref, watch } from 'vue'
 
-const canvasContainer = ref(null)
 const isMenuOpen = ref(false)
 
-const targetTitleLine1 = "Студия Николая"
-const targetTitleLine2 = "Мацнева"
-
-const targetTags = [
-  'Светодизайн', 'Дизайн', 'Архитектура', 'Атмосфера',
-  'Концепт', 'Инженерия', 'Искусство', 'Пространства', 'Влияние'
-]
-
-// Текстовые переменные для анимации главного экрана
-const titleLine1 = ref("")
-const titleLine2 = ref("")
-const scrambledTags = ref(targetTags.map(() => ""))
-
-// Текстовые переменные для анимации ссылок в меню на русском
 const menuAbout = ref("Обо мне")
-const menuGallery = ref("Галерея")
-const menuContacts = ref("Контакты")
 const menuProjects = ref("Проекты")
+const menuGallery = ref("Услуги")
+const menuContacts = ref("Контакты")
 
-// Кириллические символы для анимации
 const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
 
 // Интервальный алгоритм с поочередным открытием букв
@@ -137,121 +100,18 @@ const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
 
-// Эффект расшифровки пунктов меню при его открытии
+// Эффект расшифровки пунктов меню при его открытии (на русском языке)
 watch(isMenuOpen, (isOpen) => {
   if (isOpen) {
     runScramble("Обо мне", menuAbout, 100)
-    runScramble("Галерея", menuGallery, 220)
-    runScramble("Контакты", menuContacts, 340)
-    runScramble("Проекты", menuProjects, 460)
-  }
-})
-
-// Переменные Three.js сценария
-let scene, camera, renderer, modelMesh, animationFrameId
-
-const handleResize = () => {
-  if (!canvasContainer.value || !camera || !renderer) return
-  const width = canvasContainer.value.clientWidth
-  const height = canvasContainer.value.clientHeight
-
-  camera.aspect = width / height
-  camera.updateProjectionMatrix()
-  renderer.setSize(width, height)
-}
-
-onMounted(() => {
-  // Включаем резиновый масштаб страницы и переменные на тег <html>
-  document.documentElement.classList.add('reference-root-active')
-
-  // Плавный запуск анимации перебора символов при загрузке страницы
-  runScramble(targetTitleLine1, titleLine1, 150)
-  runScramble(targetTitleLine2, titleLine2, 450)
-
-  targetTags.forEach((tag, index) => {
-    const reactiveWrapper = {
-      get value() { return scrambledTags.value[index] },
-      set value(v) { scrambledTags.value[index] = v }
-    }
-    runScramble(tag, reactiveWrapper, 750 + index * 120)
-  })
-
-  // --- ИНИЦИАЛИЗАЦИЯ THREE.JS ---
-  if (canvasContainer.value) {
-    const width = canvasContainer.value.clientWidth
-    const height = canvasContainer.value.clientHeight
-
-    scene = new THREE.Scene()
-
-    // Настройка камеры
-    camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100)
-    camera.position.set(0, 0, 10)
-
-    // Рендерер с поддержкой прозрачности (для сочетания с CSS-фоном)
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setSize(width, height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    canvasContainer.value.appendChild(renderer.domElement)
-
-    // --- ХУДОЖЕСТВЕННЫЙ СВЕТОДИЗАЙН ДЛЯ МОДЕЛИ ---
-    const ambientLight = new THREE.AmbientLight(0x0e0e0f, 1.0)
-    scene.add(ambientLight)
-
-    // Прожектор 1: КРАСНЫЙ (#FF000E) снизу-слева — интенсивность 4.0
-    const redSpotlight = new THREE.DirectionalLight(0xff000e, 4.0)
-    redSpotlight.position.set(-6, -6, 0)
-    scene.add(redSpotlight)
-
-    // Прожектор 2: СВЕРХЧИСТЫЙ БЕЛЫЙ (#FFFFFF) снизу-справа — интенсивность 1.0
-    const whiteSpotlight = new THREE.DirectionalLight(0xffffff, 1.0)
-    whiteSpotlight.position.set(6, -6, 0)
-    scene.add(whiteSpotlight)
-
-    /*
-      --- СЮДА МОЖНО ИМПОРТИРОВАТЬ ВАШУ НОВУЮ МОДЕЛЬ ---
-      Например, используя GLTFLoader:
-
-      import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-      const loader = new GLTFLoader()
-      loader.load('/models/my_new_model.gltf', (gltf) => {
-         modelMesh = gltf.scene
-         scene.add(modelMesh)
-      })
-    */
-
-    // Анимационный цикл
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate)
-
-      if (modelMesh) {
-        // Плавное вращение вокруг вертикальной оси Y
-        modelMesh.rotation.y += 0.003
-      }
-
-      renderer.render(scene, camera)
-    }
-    animate()
-
-    window.addEventListener('resize', handleResize)
-  }
-})
-
-onUnmounted(() => {
-  document.documentElement.classList.remove('reference-root-active')
-  window.removeEventListener('resize', handleResize)
-
-  // Очистка памяти WebGL при уходе со страницы
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
-  }
-  if (renderer) {
-    renderer.dispose()
+    runScramble("Проекты", menuProjects, 220)
+    runScramble("Услуги", menuGallery, 340)
+    runScramble("Контакты", menuContacts, 460)
   }
 })
 </script>
 
 <style scoped>
-/* Подключаем современный шрифт Inter с Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
 .hero-wrapper {
@@ -263,57 +123,15 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* Фоновый холст 3D WebGL сцены */
-.webgl-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1; /* Строго под текстом (z-index: 2) */
-  pointer-events: none; /* Пропускает клики на текст и кнопки */
-}
-
-/* Сетка шапки */
-.hero-header {
-  box-sizing: border-box;
-  gap: var(--space-m);
-  min-height: 100vh;
-  align-content: start;
-  display: grid;
-  position: relative;
-  overflow: hidden;
-  padding: var(--space-s);
-}
-
-.hero-title, .hero-list {
-  margin: 0;
-  padding: 0;
-  font-size: 1rem; /* Масштабируется динамически через VW */
-  font-weight: 400; /* Вернули исходную толщину Regular */
-  color: #fff;
-  mix-blend-mode: difference;
-  z-index: 2;
-  pointer-events: none;
-  letter-spacing: -.02em; /* Чистая и аккуратная плотность */
-  word-spacing: 0.12em; /* Свободное расстояние между словами */
-  line-height: 1;
-}
-
-.hero-list {
-  list-style: none;
-}
-
-/* Увеличенный вертикальный отступ между тегами */
-.hero-list li {
-  margin-bottom: 0.18rem;
-}
-
-/* Стили навигации и вертикального текста */
+/* Стили навигации и ссылок */
 .link {
-  color: var(--color-front);
+  color: var(--color-front, #f1f1f0);
   text-decoration: none;
   position: relative;
   transform: translateZ(0);
+  /* Четко ограничиваем хитбокс ссылки по ее контуру во избежание наложений */
+  display: inline-block;
+  vertical-align: top;
 }
 
 .link > span {
@@ -321,10 +139,19 @@ onUnmounted(() => {
   transition: transform .3s;
 }
 
+/* Базовые ховер-эффекты для десктопа (только горизонтальный переворот) */
+@media (hover: hover) {
+  .link:hover {
+    cursor: pointer;
+  }
+  .link:hover > span {
+    transform: rotateX(180deg);
+  }
+}
+
 /*
-  ВЕРТИКАЛЬНЫЙ ТЕКСТ (m-vertical)
-  Применяется СТРОГО на мобильных устройствах (<= 759px).
-  На десктопе он автоматически становится горизонтальным!
+  ВЕРТИКАЛЬНЫЙ ТЕКСТ И ХОВЕРЫ ДЛЯ МОБИЛЬНЫХ (<= 759px)
+  Все мобильные анимации (включая rotateY) изолированы здесь
 */
 @media (max-width: 759px) {
   .m-vertical {
@@ -333,18 +160,12 @@ onUnmounted(() => {
     transform: rotate(180deg);
     display: inline-block;
   }
-}
 
-@media (hover: hover) {
-  .link:hover {
-    cursor: pointer;
-  }
-  .link:hover > span {
-    transform: rotateX(180deg);
-  }
-  /* На мобильных при наведении переворачиваем по вертикальной оси */
-  .link.m-vertical:hover > span {
-    transform: rotateY(180deg);
+  @media (hover: hover) {
+    /* На мобильных при наведении переворачиваем строго по вертикальной оси Y */
+    .link.m-vertical:hover > span {
+      transform: rotateY(180deg) !important;
+    }
   }
 }
 
@@ -420,11 +241,6 @@ onUnmounted(() => {
     grid-column-start: 3;
     text-align: left;
     display: block;
-  }
-
-  /* Увеличенные отступы между li в меню на десктопе */
-  .overlay-list li {
-    margin-bottom: 0.25rem;
   }
 }
 
