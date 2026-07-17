@@ -35,12 +35,12 @@ import Header from '../components/Header.vue'
 
 const canvasContainer = ref(null)
 
-const targetTitleLine1 = "Студия Николая"
-const targetTitleLine2 = "Мацнева"
+const targetTitleLine1 = "Студия светового дизайна "
+const targetTitleLine2 = "Мацнева Николая"
 
 const targetTags = [
   'Светодизайн', 'Дизайн', 'Архитектура', 'Атмосфера',
-  'Концепт', 'Инженерия', 'Искусство', 'Пространства', 'Влияние'
+  'Концепт', 'Инженерия', 'Искусство', 'Пространство', 'Влияние'
 ]
 
 // Текстовые переменные для анимации главного экрана

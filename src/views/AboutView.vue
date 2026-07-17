@@ -16,10 +16,10 @@
 
       <!-- Контентная область -->
       <div class="about-content" v-if="!loading">
-        <!-- Левая текстовая колонка, получаемая из Directus (аккуратный мелкий текст) -->
-        <div class="text-container" v-html="textAbout"></div>
+        <!-- Левая текстовая колонка, получаемая из WYSIWYG-поля title в Directus -->
+        <div class="text-container" ref="textContainerRef" v-html="textAbout"></div>
 
-        <!-- Абсолютно позиционированный портрет в правом нижнем углу -->
+        <!-- Абсолютно позиционированный портрет в правом нижнем углу с компенсацией пустоты PNG -->
         <img
             v-if="photoUrl"
             :src="photoUrl"
@@ -37,12 +37,72 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import Header from '../components/Header.vue'
 
 const textAbout = ref('')
 const photoUrl = ref('')
 const loading = ref(true)
+const textContainerRef = ref(null)
+
+const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
+
+// Рекурсивный поиск текстовых узлов (исключая пустые переносы строк)
+const getTextNodes = (node) => {
+  const textNodes = []
+  const walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false)
+  let currentNode = walk.nextNode()
+  while (currentNode) {
+    if (currentNode.nodeValue.trim().length > 0) {
+      textNodes.push(currentNode)
+    }
+    currentNode = walk.nextNode()
+  }
+  return textNodes
+}
+
+// Быстрая покадровая дешифрация контента без повреждения HTML-тегов
+const scrambleHTMLContent = (containerElement) => {
+  const textNodes = getTextNodes(containerElement)
+
+  textNodes.forEach((node, nodeIndex) => {
+    const originalText = node.nodeValue
+    const length = originalText.length
+
+    let currentFrame = 0
+    const totalFrames = 25 // Каждая строка/абзац дешифруется ровно за 25 кадров (~750мс)!
+
+    // Деликатная задержка между абзацами, чтобы они шли волной сверху вниз
+    const delay = nodeIndex * 80
+
+    setTimeout(() => {
+      const interval = setInterval(() => {
+        currentFrame++
+        const progress = currentFrame / totalFrames // От 0.0 до 1.0
+
+        node.nodeValue = originalText
+            .split("")
+            .map((char, index) => {
+              if (char === " " || char === "\n") return char
+
+              // Рассчитываем порог открытия символа на основе текущего кадра
+              const charThreshold = index / length
+              if (progress >= charThreshold) {
+                return char
+              }
+
+              return glyphs[Math.floor(Math.random() * glyphs.length)]
+            })
+            .join("")
+
+        if (currentFrame >= totalFrames) {
+          clearInterval(interval)
+          node.nodeValue = originalText // Гарантируем полное восстановление оригинального текста
+        }
+      }, 30) // Скорость тика кадров (30мс - супер-динамично!)
+    }, delay)
+  })
+}
 
 const fetchAboutData = async () => {
   try {
@@ -51,25 +111,36 @@ const fetchAboutData = async () => {
       const { data } = await response.json()
 
       // Записываем HTML-текст из CMS
-      textAbout.value = data.text_about
+      textAbout.value = data.title
 
-      // Умный парсер путей изображений для локалхоста и продакшена
+      // Умный автоматический резолвер путей изображений для localhost и сервера
       if (data.photo_about) {
         const path = data.photo_about
 
-        // Если путь уже является полной ссылкой, записываем как есть
         if (path.startsWith('http://') || path.startsWith('https://')) {
           photoUrl.value = path
-        } else {
-          // Если путь относительный (/assets/...), принудительно подставляем домен CMS
+        } else if (path.includes('assets/')) {
           const cleanPath = path.startsWith('/') ? path.slice(1) : path
           photoUrl.value = `https://lightcms.tsukawa.ru/${cleanPath}`
+        } else {
+          photoUrl.value = `https://lightcms.tsukawa.ru/assets/${path}`
         }
       }
+
+      // Сначала отключаем лоадер, чтобы Vue смонтировал .text-container в DOM!
+      loading.value = false
+
+      // Запускаем дешифрацию строго в следующем тике после монтирования DOM
+      nextTick(() => {
+        if (textContainerRef.value) {
+          // Мгновенно делаем текст видимым при старте анимации
+          textContainerRef.value.style.opacity = '1'
+          scrambleHTMLContent(textContainerRef.value)
+        }
+      })
     }
   } catch (error) {
     console.error('Ошибка при загрузке данных из Directus:', error)
-  } finally {
     loading.value = false
   }
 }
@@ -147,24 +218,26 @@ onUnmounted(() => {
   width: 100%;
   position: relative;
   z-index: 2;
+  opacity: 0; /* Скрываем текст до старта анимации, чтобы убрать мигание */
+  transition: opacity 0.2s ease;
 }
 
 @media (min-width: 1024px) {
   .text-container {
-    /* Ограничиваем ширину текста слева, оставляя правую часть для крупного портрета */
-    max-width: 65%;
+    /* Широкий текстовый блок по макету (около 78% ширины экрана) */
+    max-width: 78% !important;
   }
 }
 
 /*
   Абсолютное позиционирование портрета.
-  Он всегда прижат к нижнему правому углу, не мешая тексту.
+  Сдвиг right: -80px полностью нивелирует пустые поля в файле png, прижимая его вплотную к краю.
 */
 .portrait-img {
   position: absolute;
   bottom: 0;
-  right: 0;
-  height: 90vh; /* Масштабный величественный портрет по макету */
+  right: -80px; /* Сдвиг на 80px вправо для идеальной компенсации полей в PNG */
+  height: 70vh; /* Установили высоту 70% от высоты экрана по макету */
   width: auto;
   object-fit: contain;
   pointer-events: none;
@@ -174,6 +247,7 @@ onUnmounted(() => {
 @media (max-width: 1023px) {
   .portrait-img {
     height: 45vh;
+    right: -20px;
     opacity: 0.25; /* Полупрозрачный фон на телефонах во избежание перекрытия */
   }
 }
@@ -197,44 +271,69 @@ onUnmounted(() => {
 <style>
 /*
   ГЛОБАЛЬНЫЙ БЛОК СТИЛЕЙ (Unscoped)
-  Гарантирует точный мелкий размер текста из Directus (v-html) на любых версиях компиляторов
+  Защищает верстку от огромных 40px шрифтов.
+  Весь текст (включая цитаты) теперь выводится в едином стиле 20px на десктопе.
 */
-.text-container p {
-  font-size: 15px !important;
-  font-weight: 300 !important;
-  line-height: 1.6 !important;
-  letter-spacing: -0.01em !important;
-  word-spacing: 0.12em !important;
-  margin: 0 0 1.2rem 0 !important;
-  color: #f1f1f0 !important;
-  opacity: 0.85 !important;
+
+/* --- НАСТРОЙКИ ДЛЯ КОМПЬЮТЕРОВ (Шрифт строго 20px, весь текст в одном стиле по вашему макету) --- */
+@media (min-width: 760px) {
+  html.reference-root-active #about .text-container * {
+    font-size: 20px !important; /* Строго 20px по вашему макету для всех элементов */
+    font-weight: 300 !important;
+    line-height: 1.6 !important;
+    letter-spacing: -0.01em !important;
+    word-spacing: 0.12em !important;
+    margin: 0 0 16px 0 !important; /* Увеличили отступ пропорционально шрифту */
+    color: #f1f1f0 !important;
+    opacity: 0.9 !important;
+  }
+
+  /* Восстановление маркеров списка из WYSIWYG на десктопе */
+  html.reference-root-active #about .text-container ul {
+    list-style: disc !important; /* Возвращаем стандартные круглые маркеры */
+    margin: 0 0 28px 0 !important;
+    padding-left: 20px !important; /* Добавляем левый отступ, чтобы маркеры влезли */
+  }
+
+  html.reference-root-active #about .text-container li {
+    font-size: 20px !important;
+    font-weight: 300 !important;
+    line-height: 1.6 !important;
+    list-style: disc !important; /* Дублируем показ точек */
+    margin-bottom: 12px !important; /* Вертикальный отступ между li */
+    color: #f1f1f0 !important;
+    opacity: 0.9 !important;
+  }
 }
 
-/* Стилизация цитат и вводного текста из CMS (18px) */
-.text-container blockquote,
-.text-container p:first-of-type {
-  font-size: 18px !important;
-  font-weight: 400 !important;
-  line-height: 1.5 !important;
-  margin-bottom: 1.8rem !important;
-  color: #fff !important;
-  opacity: 1 !important;
-}
+/* --- НАСТРОЙКИ ДЛЯ ТЕЛЕФОНОВ (Комфортные 17px, весь текст в одном стиле) --- */
+@media (max-width: 759px) {
+  html.reference-root-active #about .text-container * {
+    font-size: 17px !important;
+    font-weight: 300 !important;
+    line-height: 1.5 !important;
+    letter-spacing: -0.01em !important;
+    margin: 0 0 12px 0 !important;
+    color: #f1f1f0 !important;
+    opacity: 0.9 !important;
+  }
 
-/* Маркированные списки */
-.text-container ul {
-  list-style: none !important;
-  margin: 0 0 1.8rem 0 !important;
-  padding: 0 !important;
-}
+  /* Восстановление маркеров списков на мобильных телефонах */
+  html.reference-root-active #about .text-container ul {
+    list-style: disc !important;
+    margin: 0 0 20px 0 !important;
+    padding-left: 20px !important;
+  }
 
-.text-container li {
-  font-size: 15px !important;
-  font-weight: 300 !important;
-  line-height: 1.6 !important;
-  margin-bottom: 0.6rem !important;
-  color: #f1f1f0 !important;
-  opacity: 0.85 !important;
+  html.reference-root-active #about .text-container li {
+    font-size: 17px !important;
+    font-weight: 300 !important;
+    line-height: 1.5 !important;
+    list-style: disc !important;
+    margin-bottom: 10px !important;
+    color: #f1f1f0 !important;
+    opacity: 0.9 !important;
+  }
 }
 
 /* Резиновый масштаб страницы и передача глобальных переменных */
