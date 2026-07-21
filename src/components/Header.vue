@@ -24,7 +24,7 @@
       <!-- 2. Пустая колонка для сетки -->
       <div class="overlay-empty"></div>
 
-      <!-- 3. Навигационные ссылки -->
+      <!-- 3. Навигационные ссылки (Клики ведут на ваши роуты страниц) -->
       <ul class="overlay-list svelte-1ri0n2j">
         <li>
           <router-link to="/about" class="link m-vertical" @click="toggleMenu">
@@ -32,7 +32,7 @@
           </router-link>
         </li>
         <li>
-          <router-link to="/project-template" class="link m-vertical" @click="toggleMenu">
+          <router-link to="/projects" class="link m-vertical" @click="toggleMenu">
             <span>{{ menuProjects }}</span>
           </router-link>
         </li>
@@ -254,7 +254,7 @@ watch(isMenuOpen, (isOpen) => {
 
   /*
     На мобильных список во 2-й колонке выстроен по горизонтали (в ряд).
-    align-self: start и align-items: flex-start прижимают элементы
+    align-self: start i align-items: flex-start прижимают элементы
     ровно к верхнему краю сетки, на один уровень с логотипом.
   */
   .overlay-list {
