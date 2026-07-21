@@ -9,7 +9,7 @@
           <h2 class="page-title">Все проекты</h2>
         </div>
 
-        <!-- Колонка 2: Компактная превью-картинка, плавно следующая за строками -->
+        <!-- Колонка 2: Компактная превью-картинка по макету -->
         <div class="projects-col-2">
           <div
               class="preview-container"
@@ -35,12 +35,15 @@
                 class="project-row"
                 @mouseenter="handleMouseEnter(project, $event)"
             >
-              <!-- Клик на Название ведет на детальную страницу -->
-              <router-link :to="`/projects/${project.id}`" class="project-title-link">
+              <!--
+                ПРАВКА КЛИЕНТА: Клик на Название теперь ведет
+                в год проекта (/projects/year/:year), а не в сам проект!
+              -->
+              <router-link :to="`/projects/year/${project.year}`" class="project-title-link">
                 <span>{{ project.title }}</span>
               </router-link>
 
-              <!-- Клик на Год ведет на страницу проектов этого года -->
+              <!-- Клик на Год также ведет на страницу проектов этого года -->
               <router-link :to="`/projects/year/${project.year}`" class="project-year-link">
                 <span>{{ project.year }}</span>
               </router-link>
