@@ -2,7 +2,7 @@
   <div class="project-page-wrapper">
     <Header />
 
-    <section id="project" class="project-section" v-if="!loading && project">
+    <section id="project" class="project-section" v-if="!loading && !error && project">
       <!-- Сетка заголовка проекта -->
       <div class="project-grid-header">
         <h2 class="project-main-title">
@@ -55,7 +55,7 @@
             <!-- Текст описания и кнопка действия -->
             <div class="project-description-block">
               <h3 class="about-label">О проекте:</h3>
-              <div class="project-html-content" v-html="project.content"></div>
+              <div class="project-html-content" v-html="sanitizedProjectContent"></div>
 
               <!-- Кнопка заказа -->
               <div class="cta-row">
@@ -70,6 +70,10 @@
     </section>
 
     <!-- Лоадер -->
+    <div class="project-loading" v-else-if="error">
+      <span class="loading-text">Не удалось загрузить проект. Проверьте адрес или попробуйте обновить страницу.</span>
+    </div>
+
     <div class="project-loading" v-else>
       <span class="loading-text">Загрузка информации о проекте...</span>
     </div>
@@ -77,9 +81,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
+import { sanitizeHtml } from '../utils/sanitize'
 
 const route = useRoute()
 const project = ref(null)
@@ -87,6 +92,8 @@ const galleryUrls = ref([])
 const activeImgIndex = ref(0)
 const activeImage = ref('')
 const loading = ref(true)
+const error = ref(false)
+const sanitizedProjectContent = computed(() => sanitizeHtml(project.value?.content))
 
 const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
 
@@ -140,9 +147,15 @@ const fetchProjectDetails = async () => {
   try {
     const projectId = route.params.id
     const response = await fetch(`https://lightcms.tsukawa.ru/items/projects/${projectId}?fields=*,gallery.*`)
-    if (response.ok) {
-      const { data } = await response.json()
-      project.value = data
+    if (!response.ok) {
+      throw new Error(`CMS returned ${response.status}`)
+    }
+
+    const { data } = await response.json()
+    if (!data) {
+      throw new Error('CMS returned no project data')
+    }
+    project.value = data
 
       // Собираем галерею картинок (превью + вложенные файлы)
       const urls = []
@@ -174,9 +187,10 @@ const fetchProjectDetails = async () => {
           scrambleHTMLContent(descContainer)
         }
       })
-    }
   } catch (err) {
     console.error('Ошибка загрузки деталей проекта:', err)
+    error.value = true
+  } finally {
     loading.value = false
   }
 }

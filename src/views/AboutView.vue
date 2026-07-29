@@ -15,9 +15,9 @@
       </div>
 
       <!-- Контентная область -->
-      <div class="about-content" v-if="!loading">
+      <div class="about-content" v-if="!loading && !error">
         <!-- Левая текстовая колонка, получаемая из WYSIWYG-поля title в Directus -->
-        <div class="text-container" ref="textContainerRef" v-html="textAbout"></div>
+        <div class="text-container" ref="textContainerRef" v-html="sanitizedTextAbout"></div>
 
         <!-- Абсолютно позиционированный портрет в правом нижнем углу с компенсацией пустоты PNG -->
         <img
@@ -29,6 +29,10 @@
       </div>
 
       <!-- Лоадер на время загрузки данных из CMS -->
+      <div class="about-loading" v-else-if="error">
+        <span class="loading-text">Не удалось загрузить информацию. Попробуйте обновить страницу.</span>
+      </div>
+
       <div class="about-loading" v-else>
         <span class="loading-text">Загрузка...</span>
       </div>
@@ -37,13 +41,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import Header from '../components/Header.vue'
+import { sanitizeHtml } from '../utils/sanitize'
 
 const textAbout = ref('')
 const photoUrl = ref('')
 const loading = ref(true)
+const error = ref(false)
 const textContainerRef = ref(null)
+const sanitizedTextAbout = computed(() => sanitizeHtml(textAbout.value))
 
 const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
 
@@ -107,8 +114,11 @@ const scrambleHTMLContent = (containerElement) => {
 const fetchAboutData = async () => {
   try {
     const response = await fetch('https://lightcms.tsukawa.ru/items/about')
-    if (response.ok) {
-      const { data } = await response.json()
+    if (!response.ok) {
+      throw new Error(`CMS returned ${response.status}`)
+    }
+
+    const { data } = await response.json()
 
       // Записываем HTML-текст из CMS
       textAbout.value = data.title
@@ -138,9 +148,10 @@ const fetchAboutData = async () => {
           scrambleHTMLContent(textContainerRef.value)
         }
       })
-    }
-  } catch (error) {
+  } catch (err) {
     console.error('Ошибка при загрузке данных из Directus:', error)
+    error.value = true
+  } finally {
     loading.value = false
   }
 }

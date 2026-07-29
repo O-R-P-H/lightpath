@@ -15,9 +15,9 @@
       </div>
 
       <!-- Контентная область -->
-      <div class="services-content" v-if="!loading">
+      <div class="services-content" v-if="!loading && !error">
         <!-- Левая текстовая колонка, получаемая из WYSIWYG-поля title в Directus -->
-        <div class="text-container" ref="textContainerRef" v-html="textServices"></div>
+        <div class="text-container" ref="textContainerRef" v-html="sanitizedTextServices"></div>
 
         <!-- Абсолютно позиционированный портрет в правом нижнем углу с компенсацией пустоты PNG -->
         <img
@@ -29,6 +29,10 @@
       </div>
 
       <!-- Лоадер на время загрузки данных из CMS -->
+      <div class="services-loading" v-else-if="error">
+        <span class="loading-text">Не удалось загрузить услуги. Попробуйте обновить страницу.</span>
+      </div>
+
       <div class="services-loading" v-else>
         <span class="loading-text">Загрузка услуг...</span>
       </div>
@@ -37,13 +41,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import Header from '../components/Header.vue'
+import { sanitizeHtml } from '../utils/sanitize'
 
 const textServices = ref('')
 const photoUrl = ref('')
 const loading = ref(true)
+const error = ref(false)
 const textContainerRef = ref(null)
+const sanitizedTextServices = computed(() => sanitizeHtml(textServices.value))
 
 const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
 
@@ -105,8 +112,11 @@ const scrambleHTMLContent = (containerElement) => {
 const fetchServicesData = async () => {
   try {
     const response = await fetch(`https://lightcms.tsukawa.ru/items/services?t=${Date.now()}`)
-    if (response.ok) {
-      const { data } = await response.json()
+    if (!response.ok) {
+      throw new Error(`CMS returned ${response.status}`)
+    }
+
+    const { data } = await response.json()
 
       // Записываем HTML-текст из поля title в вашей коллекции services
       textServices.value = data.title
@@ -133,9 +143,10 @@ const fetchServicesData = async () => {
           scrambleHTMLContent(textContainerRef.value)
         }
       })
-    }
-  } catch (error) {
+  } catch (err) {
     console.error('Ошибка при загрузке данных об услугах из Directus:', error)
+    error.value = true
+  } finally {
     loading.value = false
   }
 }
