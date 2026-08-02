@@ -4,33 +4,23 @@
     <Header />
 
     <section id="contacts" class="contacts-section" v-if="!loading">
+      <BrandLink class="contacts-brand" />
+
       <!-- Список контактов с уникальным геометрическим смещением по макету -->
       <ul class="contacts-list">
-        <li class="contact-item">
-          <a :href="contactsData.telegram_url" target="_blank" rel="noopener" class="link">
-            <span>{{ labelTelegram }}</span>
-          </a>
-        </li>
-        <li class="contact-item">
-          <a :href="contactsData.instagram_url" target="_blank" rel="noopener" class="link">
-            <span>{{ labelInstagram }}</span>
-          </a>
-        </li>
-        <li class="contact-item">
-          <a :href="`mailto:${contactsData.email}`" class="link">
-            <span>{{ labelEmail }}</span>
-          </a>
-        </li>
-        <li class="contact-item">
-          <a :href="`tel:${contactsData.phone}`" class="link">
-            <span>{{ labelPhone }}</span>
+        <li v-for="(contact, index) in contactLinks" :key="contact.label" class="contact-item" :class="`contact-${contact.label.toLowerCase()}`">
+          <a :href="contact.href" :target="contact.href.startsWith('http') ? '_blank' : undefined" rel="noopener" class="link">
+            <ContactIcon :type="contact.label" />
+            <span class="contact-label">{{ animatedLabels[index] }}</span>
+            <span class="contact-value">{{ contact.value }}</span>
+            <span class="contact-arrow" aria-hidden="true">↗</span>
           </a>
         </li>
       </ul>
 
       <!-- Маленькая подпись снизу -->
       <div class="bottom-signature m-vertical">
-        <span>{{ contactsData.bottom_text }}</span>
+        <span>{{ bottomText }}</span>
       </div>
     </section>
 
@@ -44,25 +34,18 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import Header from '../components/Header.vue'
+import BrandLink from '../components/BrandLink.vue'
+import ContactIcon from '../components/ContactIcon.vue'
+import { DIRECTUS_URL } from '../utils/directus'
+import { getContactLinks } from '../config/contacts'
 
 const loading = ref(true)
 
-// Реактивные переменные для анимации дешифрования названий соцсетей
-const labelTelegram = ref("")
-const labelInstagram = ref("")
-const labelEmail = ref("")
-const labelPhone = ref("")
+const contactLinks = ref(getContactLinks())
+const animatedLabels = ref(contactLinks.value.map(() => ''))
+const bottomText = ref('Открыты к новым проектам')
 
 const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_*?@#$%"
-
-// Демонстрационные данные на случай, если CMS еще пустая
-const contactsData = ref({
-  telegram_url: 'https://t.me/matsnev_light',
-  instagram_url: 'https://instagram.com/matsnev.lighting',
-  email: 'hello@matsnev.light',
-  phone: '+79991234567',
-  bottom_text: 'Свяжитесь со мной ✌︎'
-})
 
 // Интервальный алгоритм с поочередным открытием букв
 const runScramble = (targetText, reactiveRef, delay = 0) => {
@@ -92,22 +75,25 @@ const runScramble = (targetText, reactiveRef, delay = 0) => {
 
 const fetchContacts = async () => {
   try {
-    const response = await fetch(`https://lightcms.tsukawa.ru/items/contacts?t=${Date.now()}`)
+    const response = await fetch(`${DIRECTUS_URL}/items/contacts?fields=email,bottom_text`)
     if (response.ok) {
       const { data } = await response.json()
-      // Записываем данные из CMS
-      contactsData.value = data
+      contactLinks.value = getContactLinks(data?.email)
+      if (data?.bottom_text && data.bottom_text.trim().length > 2) bottomText.value = data.bottom_text
     }
   } catch (error) {
     console.error('Ошибка получения контактов из Directus, используем демо-данные:', error)
   } finally {
     loading.value = false
 
-    // Запуск красивой анимации проявления контактов при загрузке
-    runScramble("Telegram", labelTelegram, 100)
-    runScramble("Instagram", labelInstagram, 250)
-    runScramble("Email", labelEmail, 400)
-    runScramble("Телефон", labelPhone, 550) // Адаптировано под русские символы
+    animatedLabels.value = contactLinks.value.map(() => '')
+    contactLinks.value.forEach((contact, index) => {
+      const reactiveWrapper = {
+        get value() { return animatedLabels.value[index] },
+        set value(value) { animatedLabels.value[index] = value },
+      }
+      runScramble(contact.label, reactiveWrapper, 100 + index * 150)
+    })
   }
 }
 
@@ -123,7 +109,7 @@ onUnmounted(() => {
 
 <style scoped>
 .contacts-page-wrapper {
-  background-color: #0e0e0f;
+  background: transparent;
   color: #f1f1f0;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
@@ -138,6 +124,14 @@ onUnmounted(() => {
   display: grid;
   position: relative;
   box-sizing: border-box;
+}
+
+.contacts-brand {
+  position: absolute;
+  top: var(--space-s);
+  left: var(--space-s);
+  z-index: 2;
+  font-size: 0.72rem;
 }
 
 .contacts-list {
@@ -161,11 +155,15 @@ onUnmounted(() => {
   color: var(--color-front, #f1f1f0);
   text-decoration: none;
   font-family: 'Inter', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(12px, 1vw, 28px);
+  letter-spacing: 0;
 }
 
-.link > span {
+.link > .contact-label {
   display: inline-block;
-  font-size: 1.35vw !important; /* Крупный бруталистичный размер хедера */
+  font-size: clamp(25px, 1.75vw, 68px) !important;
   font-weight: 300 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -173,8 +171,23 @@ onUnmounted(() => {
   transition: transform .3s;
 }
 
+.link > svg {
+  font-size: clamp(26px, 1.75vw, 66px);
+}
+
+.contact-value {
+  font-size: clamp(16px, 0.9vw, 34px);
+  letter-spacing: 0;
+  opacity: 0.56;
+}
+
+.contact-arrow {
+  font-size: clamp(18px, 1vw, 38px);
+  opacity: 0.7;
+}
+
 @media (hover: hover) {
-  .link:hover > span {
+  .link:hover > .contact-label {
     transform: rotateX(180deg);
   }
 }
@@ -189,6 +202,7 @@ onUnmounted(() => {
   font-size: 14px !important;
   font-weight: 300;
   opacity: 0.6;
+  letter-spacing: 0;
 }
 
 /* --- ГЕОМЕТРИЧЕСКОЕ СМЕЩЕНИЕ ДЛЯ ДЕСКТОПОВ (>= 760px) --- */
@@ -202,25 +216,21 @@ onUnmounted(() => {
     height: 100%;
   }
 
-  /* Ссылка 1 (Telegram) прижата к левому краю */
-  .contact-item:first-child {
+  .contact-telegram {
     justify-content: flex-start;
   }
 
-  /* Ссылка 2 (Instagram) смещена вправо на 25% */
-  .contact-item:nth-child(2) {
+  .contact-max {
     padding-right: 25%;
     justify-content: center;
   }
 
-  /* Ссылка 3 (Email) смещена влево на 25% */
-  .contact-item:nth-child(3) {
+  .contact-email {
     padding-left: 25%;
     justify-content: center;
   }
 
-  /* Ссылка 4 (Телефон) прижата к правому краю */
-  .contact-item:nth-child(4) {
+  .contact-phone {
     justify-content: flex-end;
   }
 
@@ -232,8 +242,12 @@ onUnmounted(() => {
 
 /* --- НАСТРОЙКИ ДЛЯ МОБИЛЬНЫХ (<= 759px) --- */
 @media (max-width: 759px) {
-  .link > span {
+  .link > .contact-label {
     font-size: 1.1rem !important;
+  }
+
+  .contact-value {
+    display: none;
   }
 
   .contact-item {

@@ -5,10 +5,7 @@
     <section id="project" class="project-section" v-if="!loading && !error && project">
       <!-- Сетка заголовка проекта -->
       <div class="project-grid-header">
-        <h2 class="project-main-title">
-          Студия светового дизайна <br />
-          Мацнева Николая
-        </h2>
+        <BrandLink class="project-main-title" />
         <div class="project-sec-title">Проекты {{ project.year ? `/ ${project.year}` : '' }}</div>
       </div>
 
@@ -17,11 +14,25 @@
         <!-- Левая колонка: Огромный главный слайд -->
         <div class="project-main-image-col">
           <transition name="fade" mode="out-in">
+            <video
+                v-if="activeMedia?.kind === 'video'"
+                :key="activeMedia.id"
+                :src="activeMedia.url"
+                class="main-project-img main-project-video"
+                controls
+                playsinline
+                preload="metadata"
+            ></video>
             <img
-                :src="activeImage"
-                :key="activeImage"
+                v-else-if="activeMedia"
+                :src="activeMedia.displayUrl"
+                :key="activeMedia.id"
                 alt="Фото проекта"
                 class="main-project-img"
+                decoding="async"
+                fetchpriority="high"
+                referrerpolicy="no-referrer"
+                @error="fallbackToOriginalAsset($event, activeMedia.id)"
             />
           </transition>
         </div>
@@ -32,24 +43,32 @@
             {{ project.title }} <span class="project-year">{{ project.year }}</span>
           </h1>
 
+          <div class="project-order-top">
+            <ProjectOrderModal />
+          </div>
+
           <div class="project-details-split">
             <!-- Вертикальный слайдер миниатюр со стрелками -->
-            <div class="gallery-slider-wrapper" v-if="galleryUrls.length > 0">
+            <div class="gallery-slider-wrapper" v-if="galleryItems.length > 0">
               <button class="slider-arrow up" @click="scrollSlider('up')" :disabled="activeImgIndex === 0">▲</button>
 
               <div class="thumbnails-container">
-                <div
-                    v-for="(url, idx) in galleryUrls"
-                    :key="idx"
+                <button
+                    v-for="(item, idx) in galleryItems"
+                    :key="item.id"
+                    type="button"
                     class="thumb-item"
                     :class="{ 'active': idx === activeImgIndex }"
                     @click="setActiveImage(idx)"
                 >
-                  <img :src="url" alt="Миниатюра" class="thumb-img" />
-                </div>
+                  <video v-if="item.kind === 'video'" :src="item.url" class="thumb-img" muted playsinline preload="metadata"></video>
+                  <img v-else :src="item.thumbnailUrl" alt="Миниатюра" class="thumb-img" loading="lazy" decoding="async" referrerpolicy="no-referrer" @error="fallbackToOriginalAsset($event, item.id)" />
+                  <span v-if="item.kind === 'video'" class="thumb-video-mark" aria-hidden="true">▶</span>
+                  <span class="sr-only">{{ item.kind === 'video' ? 'Видео' : 'Фото' }} {{ idx + 1 }}</span>
+                </button>
               </div>
 
-              <button class="slider-arrow down" @click="scrollSlider('down')" :disabled="activeImgIndex === galleryUrls.length - 1">▼</button>
+              <button class="slider-arrow down" @click="scrollSlider('down')" :disabled="activeImgIndex === galleryItems.length - 1">▼</button>
             </div>
 
             <!-- Текст описания и кнопка действия -->
@@ -57,12 +76,6 @@
               <h3 class="about-label">О проекте:</h3>
               <div class="project-html-content" v-html="sanitizedProjectContent"></div>
 
-              <!-- Кнопка заказа -->
-              <div class="cta-row">
-                <a href="#contacts" class="cta-link link">
-                  <span>Заказать проект освещения</span>
-                </a>
-              </div>
             </div>
           </div>
         </div>
@@ -84,69 +97,36 @@
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
+import BrandLink from '../components/BrandLink.vue'
+import ProjectOrderModal from '../components/ProjectOrderModal.vue'
 import { sanitizeHtml } from '../utils/sanitize'
+import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset, resolveFile } from '../utils/directus'
 
 const route = useRoute()
 const project = ref(null)
-const galleryUrls = ref([])
+const galleryItems = ref([])
 const activeImgIndex = ref(0)
-const activeImage = ref('')
 const loading = ref(true)
 const error = ref(false)
 const sanitizedProjectContent = computed(() => sanitizeHtml(project.value?.content))
+const activeMedia = computed(() => galleryItems.value[activeImgIndex.value] || null)
 
-const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
-
-const getTextNodes = (node) => {
-  const textNodes = []
-  const walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false)
-  let currentNode = walk.nextNode()
-  while (currentNode) {
-    if (currentNode.nodeValue.trim().length > 0) {
-      textNodes.push(currentNode)
-    }
-    currentNode = walk.nextNode()
-  }
-  return textNodes
-}
-
-const scrambleHTMLContent = (containerElement) => {
-  const textNodes = getTextNodes(containerElement)
-  textNodes.forEach((node, nodeIndex) => {
-    const originalText = node.nodeValue
-    const length = originalText.length
-    let currentFrame = 0
-    const totalFrames = 25
-    const delay = nodeIndex * 80
-
-    setTimeout(() => {
-      const interval = setInterval(() => {
-        currentFrame++
-        const progress = currentFrame / totalFrames
-
-        node.nodeValue = originalText
-            .split("")
-            .map((char, index) => {
-              if (char === " " || char === "\n") return char
-              const charThreshold = index / length
-              if (progress >= charThreshold) return char
-              return glyphs[Math.floor(Math.random() * glyphs.length)]
-            })
-            .join("")
-
-        if (currentFrame >= totalFrames) {
-          clearInterval(interval)
-          node.nodeValue = originalText
-        }
-      }, 30)
-    }, delay)
-  })
-}
+const toGalleryItem = (file) => ({
+  ...file,
+  url: assetUrl(file.id),
+  displayUrl: file.kind === 'image' ? assetUrl(file.id, { width: 2200, quality: 86, fit: 'inside' }) : assetUrl(file.id),
+  thumbnailUrl: file.kind === 'image' ? assetUrl(file.id, { width: 420, height: 280, quality: 78, fit: 'cover' }) : '',
+})
 
 const fetchProjectDetails = async () => {
   try {
     const projectId = route.params.id
-    const response = await fetch(`https://lightcms.tsukawa.ru/items/projects/${projectId}?fields=*,gallery.*`)
+    const fields = [
+      'id', 'title', 'year', 'content',
+      'preview.id', 'preview.type', 'preview.filename_download',
+      'gallery.directus_files_id.id', 'gallery.directus_files_id.type', 'gallery.directus_files_id.filename_download',
+    ].join(',')
+    const response = await fetch(`${DIRECTUS_URL}/items/projects/${projectId}?fields=${fields}`)
     if (!response.ok) {
       throw new Error(`CMS returned ${response.status}`)
     }
@@ -157,26 +137,19 @@ const fetchProjectDetails = async () => {
     }
     project.value = data
 
-      // Собираем галерею картинок (превью + вложенные файлы)
-      const urls = []
-      if (data.preview) {
-        urls.push(`https://lightcms.tsukawa.ru/assets/${data.preview}`)
-      }
+      // Галерея поддерживает изображения и видео из стандартного файлового поля Directus.
+      const media = []
+      const preview = resolveFile(data.preview)
+      if (preview) media.push(preview)
       if (data.gallery && Array.isArray(data.gallery)) {
         data.gallery.forEach(item => {
-          const fileId = typeof item === 'object' && item !== null
-              ? (item.directus_files_id || item.id)
-              : item
-          if (fileId) {
-            urls.push(`https://lightcms.tsukawa.ru/assets/${fileId}`)
-          }
+          const file = resolveFile(item)
+          if (file) media.push(file)
         })
       }
 
-      galleryUrls.value = urls
-      if (urls.length > 0) {
-        activeImage.value = urls[0]
-      }
+      galleryItems.value = Array.from(new Map(media.map(file => [file.id, file])).values()).map(toGalleryItem)
+      activeImgIndex.value = 0
 
       loading.value = false
 
@@ -184,7 +157,6 @@ const fetchProjectDetails = async () => {
         const descContainer = document.querySelector('.project-html-content')
         if (descContainer) {
           descContainer.style.opacity = '1'
-          scrambleHTMLContent(descContainer)
         }
       })
   } catch (err) {
@@ -197,7 +169,6 @@ const fetchProjectDetails = async () => {
 
 const setActiveImage = (idx) => {
   activeImgIndex.value = idx
-  activeImage.value = galleryUrls.value[idx]
 
   // Умный автоскролл активной миниатюры ровно в центр контейнера слайдера
   nextTick(() => {
@@ -216,7 +187,7 @@ const setActiveImage = (idx) => {
 const scrollSlider = (direction) => {
   if (direction === 'up' && activeImgIndex.value > 0) {
     setActiveImage(activeImgIndex.value - 1)
-  } else if (direction === 'down' && activeImgIndex.value < galleryUrls.value.length - 1) { // Исправлено на .value.length
+  } else if (direction === 'down' && activeImgIndex.value < galleryItems.value.length - 1) {
     setActiveImage(activeImgIndex.value + 1)
   }
 }
@@ -233,7 +204,7 @@ onUnmounted(() => {
 
 <style scoped>
 .project-page-wrapper {
-  background-color: #0e0e0f;
+  background: transparent;
   color: #f1f1f0;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
@@ -308,6 +279,11 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+.main-project-video {
+  object-fit: contain;
+  background: rgba(3, 4, 12, 0.72);
+}
+
 /* Колонка 2: Детали проекта */
 .project-details-col {
   display: flex;
@@ -324,6 +300,10 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+}
+
+.project-order-top {
+  margin: 0 0 0.55rem;
 }
 
 .project-year {
@@ -386,6 +366,10 @@ onUnmounted(() => {
   overflow: hidden;
   opacity: 0.4;
   flex-shrink: 0; /* Предотвращаем сжатие картинок внутри прокрутки */
+  position: relative;
+  padding: 0;
+  background: rgba(3, 4, 12, 0.5);
+  color: #fff;
 }
 
 .thumb-item.active {
@@ -399,6 +383,32 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+.thumb-video-mark {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: rgba(5, 6, 14, 0.58);
+  font-size: 0.38rem;
+  transform: translate(-50%, -50%);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Блок описания */
 .project-description-block {
   flex-grow: 1;
@@ -408,6 +418,7 @@ onUnmounted(() => {
   font-size: 15px !important;
   font-weight: 400 !important;
   margin: 0 0 1rem 0;
+  letter-spacing: 0;
 }
 
 @media (min-width: 1024px) {
@@ -495,7 +506,7 @@ onUnmounted(() => {
 }
 
 .project-html-content p {
-  font-size: 14px !important;
+  font-size: clamp(14px, 0.8vw, 30px) !important;
   font-weight: 300 !important;
   line-height: 1.5 !important;
   letter-spacing: -0.01em !important;
@@ -507,7 +518,7 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .project-html-content p {
-    font-size: 1vw !important; /* Тонкий изящный текст */
+    font-size: clamp(16px, 0.86vw, 32px) !important;
   }
 }
 </style>

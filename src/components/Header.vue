@@ -15,10 +15,7 @@
     <nav class="overlay" :class="{ 'open': isMenuOpen }">
       <!-- 1. Логотип (Колонка 1) -->
       <div class="overlay-logo">
-        <router-link to="/" class="link m-vertical" @click="toggleMenu">
-          <span>Студия светового дизайна</span><br />
-          <span>Мацнева Николая</span>
-        </router-link>
+        <BrandLink class="overlay-brand" @click="toggleMenu" />
       </div>
 
       <!-- 2. Пустая колонка для сетки -->
@@ -56,6 +53,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import BrandLink from './BrandLink.vue'
 
 const isMenuOpen = ref(false)
 
@@ -112,8 +110,6 @@ watch(isMenuOpen, (isOpen) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-
 .hero-wrapper {
   position: relative;
   min-height: 100vh;
@@ -187,7 +183,10 @@ watch(isMenuOpen, (isOpen) => {
 /* Полноэкранный оверлей (всегда Grid) */
 .overlay {
   z-index: 5; /* Покрывает кнопку More, но остается под кнопкой Menu/Close */
-  background-color: var(--color-back);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(91, 89, 182, 0.18), transparent 36%),
+    rgba(7, 8, 18, 0.96);
+  backdrop-filter: blur(18px);
   gap: var(--space-m);
   padding: var(--space-s);
 
@@ -206,6 +205,10 @@ watch(isMenuOpen, (isOpen) => {
 .overlay.open {
   visibility: visible;
   opacity: 1;
+}
+
+.overlay-brand {
+  font-size: 1rem;
 }
 
 /* Стилизация списка ссылок в меню */
@@ -258,12 +261,12 @@ watch(isMenuOpen, (isOpen) => {
     ровно к верхнему краю сетки, на один уровень с логотипом.
   */
   .overlay-list {
-    grid-column-start: 2;
+    grid-column: 2 / 4;
     align-self: start;
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: var(--space-l);
+    gap: clamp(18px, 6vw, 36px);
     align-items: flex-start;
   }
 
@@ -278,7 +281,7 @@ watch(isMenuOpen, (isOpen) => {
 html.reference-root-active {
   scroll-behavior: smooth;
   letter-spacing: -.04em;
-  background-color: #0e0e0f;
+  background-color: #090a16;
   margin: 0;
   padding: 0;
   font-size: 7.5vw !important;
@@ -292,8 +295,8 @@ html.reference-root-active {
   --space-m: .66rem;
   --space-l: 1rem;
   --color-front: #f1f1f0;
-  --color-back: #0e0e0f;
-  --color-line: #3b3a39;
+  --color-back: #090a16;
+  --color-line: rgba(180, 182, 224, 0.22);
 }
 
 @media (min-width: 760px) {

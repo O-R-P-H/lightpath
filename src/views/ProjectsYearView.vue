@@ -6,7 +6,7 @@
       <div class="projects-grid" v-if="!loading">
         <!-- Колонка 1: Заголовок страницы -->
         <div class="projects-col-1">
-          <h2 class="page-title">Проекты {{ year }} года</h2>
+          <BrandLink class="page-title" />
         </div>
 
         <!-- Колонка 2: Превью-изображение -->
@@ -19,6 +19,9 @@
                   :src="hoveredImage"
                   alt="Превью проекта"
                   class="preview-img"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  @error="fallbackToOriginalAsset($event, hoveredPreview)"
               />
             </transition>
           </div>
@@ -27,7 +30,7 @@
         <!-- Колонка 3: Список проектов за этот год (БЕЗ ГОДА СПРАВА) -->
         <div class="projects-col-3">
           <ul class="projects-list">
-            <li class="section-column-title">Проекты</li>
+            <li class="section-column-title">Проекты / {{ year }}</li>
 
             <li
                 v-for="project in yearProjects"
@@ -56,22 +59,23 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
+import BrandLink from '../components/BrandLink.vue'
+import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus'
 
 const route = useRoute()
 const loading = ref(true)
 const allProjects = ref([])
 const hoveredImage = ref('')
+const hoveredPreview = ref('')
 
 const year = computed(() => route.params.year)
 
 const fetchProjects = async () => {
   try {
-    // Добавлен принудительный сброс кэша (?t=...) для мгновенного обновления при смене годов в админке
-    const response = await fetch(`https://lightcms.tsukawa.ru/items/projects?t=${Date.now()}`)
-    if (response.ok) {
-      const { data } = await response.json()
-      allProjects.value = data
-    }
+    const response = await fetch(`${DIRECTUS_URL}/items/projects?fields=id,title,year,preview&limit=-1`)
+    if (!response.ok) throw new Error(`CMS returned ${response.status}`)
+    const { data } = await response.json()
+    allProjects.value = data
   } catch (error) {
     console.error('Ошибка получения проектов:', error)
   } finally {
@@ -91,7 +95,8 @@ const yearProjects = computed(() => {
 
 const handleMouseEnter = (project) => {
   if (project.preview) {
-    hoveredImage.value = `https://lightcms.tsukawa.ru/assets/${project.preview}`
+    hoveredPreview.value = project.preview
+    hoveredImage.value = assetUrl(project.preview, { width: 900, quality: 82, fit: 'cover' })
   }
 }
 
@@ -108,7 +113,7 @@ onUnmounted(() => {
 <style scoped>
 /* Стили остаются идентичными */
 .projects-year-page-wrapper {
-  background-color: #0e0e0f;
+  background: transparent;
   color: #f1f1f0;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;

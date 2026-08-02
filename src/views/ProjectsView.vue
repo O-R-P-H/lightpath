@@ -6,7 +6,7 @@
       <div class="projects-grid" v-if="!loading">
         <!-- Колонка 1: Заголовок страницы -->
         <div class="projects-col-1">
-          <h2 class="page-title">Все проекты</h2>
+          <BrandLink class="page-title" />
         </div>
 
         <!-- Колонка 2: Компактная превью-картинка по макету -->
@@ -20,6 +20,9 @@
                 :src="hoveredImage"
                 alt="Превью проекта"
                 class="preview-img"
+                decoding="async"
+                referrerpolicy="no-referrer"
+                @error="fallbackToOriginalAsset($event, hoveredPreview)"
             />
           </div>
         </div>
@@ -56,6 +59,10 @@
       <div class="projects-loading" v-else>
         <span class="loading-text">Загрузка проектов...</span>
       </div>
+
+      <div class="projects-order">
+        <ProjectOrderModal />
+      </div>
     </section>
   </div>
 </template>
@@ -63,20 +70,23 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import Header from '../components/Header.vue'
+import BrandLink from '../components/BrandLink.vue'
+import ProjectOrderModal from '../components/ProjectOrderModal.vue'
+import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus'
 
 const loading = ref(true)
 const allProjects = ref([])
 const hoveredImage = ref('')
+const hoveredPreview = ref('')
 const hoveredRowTop = ref(0)
 const listTitleRef = ref(null)
 
 const fetchProjects = async () => {
   try {
-    const response = await fetch(`https://lightcms.tsukawa.ru/items/projects?t=${Date.now()}`)
-    if (response.ok) {
-      const { data } = await response.json()
-      allProjects.value = data
-    }
+    const response = await fetch(`${DIRECTUS_URL}/items/projects?fields=id,title,year,is_in_menu,preview&limit=-1`)
+    if (!response.ok) throw new Error(`CMS returned ${response.status}`)
+    const { data } = await response.json()
+    allProjects.value = data
   } catch (error) {
     console.error('Ошибка получения проектов из Directus:', error)
   } finally {
@@ -85,7 +95,7 @@ const fetchProjects = async () => {
     // Инициализируем первое превью по умолчанию
     nextTick(() => {
       if (primaryProjects.value.length > 0) {
-        hoveredImage.value = `https://lightcms.tsukawa.ru/assets/${primaryProjects.value[0].preview}`
+        setHoveredPreview(primaryProjects.value[0])
 
         // Позиционируем превью напротив первой строки на старте
         setTimeout(() => {
@@ -109,13 +119,18 @@ const primaryProjects = computed(() => {
 // Наведение мыши: меняем картинку и плавно перемещаем контейнер по вертикали
 const handleMouseEnter = (project, event) => {
   if (project.preview) {
-    hoveredImage.value = `https://lightcms.tsukawa.ru/assets/${project.preview}`
+    setHoveredPreview(project)
   }
 
   if (event && event.currentTarget) {
     // Вычисляем точное смещение строки относительно родительского списка UL
     hoveredRowTop.value = event.currentTarget.offsetTop
   }
+}
+
+const setHoveredPreview = (project) => {
+  hoveredPreview.value = project.preview
+  hoveredImage.value = assetUrl(project.preview, { width: 800, quality: 82, fit: 'cover' })
 }
 
 onMounted(() => {
@@ -130,7 +145,7 @@ onUnmounted(() => {
 
 <style scoped>
 .projects-page-wrapper {
-  background-color: #0e0e0f;
+  background: transparent;
   color: #f1f1f0;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
@@ -172,6 +187,13 @@ onUnmounted(() => {
   color: #fff;
   letter-spacing: -.04em;
   line-height: 1;
+}
+
+.projects-order {
+  position: fixed;
+  left: var(--space-s);
+  bottom: var(--space-s);
+  z-index: 4;
 }
 
 @media (max-width: 759px) {
@@ -299,7 +321,7 @@ onUnmounted(() => {
 html.reference-root-active {
   scroll-behavior: smooth;
   letter-spacing: -.04em;
-  background-color: #0e0e0f;
+  background-color: #090a16;
   margin: 0;
   padding: 0;
   font-size: 7.5vw !important;

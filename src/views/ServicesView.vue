@@ -7,10 +7,7 @@
     <section id="services" class="services-section">
       <!-- Сетка заголовков (дублирует структуру первого экрана) -->
       <div class="services-grid-header">
-        <h2 class="services-main-title">
-          Студия светового дизайна <br />
-          Мацнева Николая
-        </h2>
+        <BrandLink class="services-main-title" />
         <div class="services-sec-title">Услуги</div>
       </div>
 
@@ -43,7 +40,9 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import Header from '../components/Header.vue'
+import BrandLink from '../components/BrandLink.vue'
 import { sanitizeHtml } from '../utils/sanitize'
+import { DIRECTUS_URL, assetUrl } from '../utils/directus'
 
 const textServices = ref('')
 const photoUrl = ref('')
@@ -52,66 +51,9 @@ const error = ref(false)
 const textContainerRef = ref(null)
 const sanitizedTextServices = computed(() => sanitizeHtml(textServices.value))
 
-const glyphs = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-"
-
-// Рекурсивный поиск текстовых узлов (исключая пустые переносы строк)
-const getTextNodes = (node) => {
-  const textNodes = []
-  const walk = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false)
-  let currentNode = walk.nextNode()
-  while (currentNode) {
-    if (currentNode.nodeValue.trim().length > 0) {
-      textNodes.push(currentNode)
-    }
-    currentNode = walk.nextNode()
-  }
-  return textNodes
-}
-
-// Быстрая покадровая дешифрация контента без повреждения HTML-тегов (25 кадров, ~750мс)
-const scrambleHTMLContent = (containerElement) => {
-  const textNodes = getTextNodes(containerElement)
-
-  textNodes.forEach((node, nodeIndex) => {
-    const originalText = node.nodeValue
-    const length = originalText.length
-
-    let currentFrame = 0
-    const totalFrames = 25
-
-    const delay = nodeIndex * 80
-
-    setTimeout(() => {
-      const interval = setInterval(() => {
-        currentFrame++
-        const progress = currentFrame / totalFrames
-
-        node.nodeValue = originalText
-            .split("")
-            .map((char, index) => {
-              if (char === " " || char === "\n") return char
-
-              const charThreshold = index / length
-              if (progress >= charThreshold) {
-                return char
-              }
-
-              return glyphs[Math.floor(Math.random() * glyphs.length)]
-            })
-            .join("")
-
-        if (currentFrame >= totalFrames) {
-          clearInterval(interval)
-          node.nodeValue = originalText
-        }
-      }, 30)
-    }, delay)
-  })
-}
-
 const fetchServicesData = async () => {
   try {
-    const response = await fetch(`https://lightcms.tsukawa.ru/items/services?t=${Date.now()}`)
+    const response = await fetch(`${DIRECTUS_URL}/items/services?fields=title,photo_services`)
     if (!response.ok) {
       throw new Error(`CMS returned ${response.status}`)
     }
@@ -129,9 +71,9 @@ const fetchServicesData = async () => {
           photoUrl.value = path
         } else if (path.includes('assets/')) {
           const cleanPath = path.startsWith('/') ? path.slice(1) : path
-          photoUrl.value = `https://lightcms.tsukawa.ru/${cleanPath}`
+          photoUrl.value = `${DIRECTUS_URL}/${cleanPath}`
         } else {
-          photoUrl.value = `https://lightcms.tsukawa.ru/assets/${path}`
+          photoUrl.value = assetUrl(path, { width: 1400, quality: 84 })
         }
       }
 
@@ -140,7 +82,6 @@ const fetchServicesData = async () => {
       nextTick(() => {
         if (textContainerRef.value) {
           textContainerRef.value.style.opacity = '1'
-          scrambleHTMLContent(textContainerRef.value)
         }
       })
   } catch (err) {
@@ -162,10 +103,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-
 .services-page-wrapper {
-  background-color: #0e0e0f;
+  background: transparent;
   color: #f1f1f0;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
@@ -283,7 +222,7 @@ onUnmounted(() => {
 /* --- НАСТРОЙКИ ДЛЯ КОМПЬЮТЕРОВ (Шрифт строго 20px, весь текст в одном стиле по вашему макету) --- */
 @media (min-width: 760px) {
   html.reference-root-active #services .text-container * {
-    font-size: 20px !important; /* Строго 20px для всех элементов */
+    font-size: clamp(20px, 1vw, 38px) !important;
     font-weight: 300 !important;
     line-height: 1.6 !important;
     letter-spacing: -0.01em !important;
@@ -301,7 +240,7 @@ onUnmounted(() => {
   }
 
   html.reference-root-active #services .text-container li {
-    font-size: 20px !important;
+    font-size: clamp(20px, 1vw, 38px) !important;
     font-weight: 300 !important;
     line-height: 1.6 !important;
     list-style: disc !important;
@@ -345,7 +284,7 @@ onUnmounted(() => {
 html.reference-root-active {
   scroll-behavior: smooth;
   letter-spacing: -.04em;
-  background-color: #0e0e0f;
+  background-color: #090a16;
   margin: 0;
   padding: 0;
   font-size: 7.5vw !important;
@@ -359,8 +298,8 @@ html.reference-root-active {
   --space-m: .66rem;
   --space-l: 1rem;
   --color-front: #f1f1f0;
-  --color-back: #0e0e0f;
-  --color-line: #3b3a39;
+  --color-back: #090a16;
+  --color-line: rgba(180, 182, 224, 0.22);
 }
 
 @media (min-width: 760px) {
