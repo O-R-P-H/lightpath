@@ -8,15 +8,24 @@
 
       <!-- Список контактов с уникальным геометрическим смещением по макету -->
       <ul class="contacts-list">
-        <li v-for="(contact, index) in contactLinks" :key="contact.label" class="contact-item" :class="`contact-${contact.label.toLowerCase()}`">
-          <a :href="contact.href" :target="contact.href.startsWith('http') ? '_blank' : undefined" rel="noopener" class="link">
-            <ContactIcon :type="contact.label" />
+        <li v-for="(contact, index) in contactLinks" :key="contact.type" class="contact-item" :class="`contact-${contact.type}`">
+          <a
+            :href="contact.href"
+            :target="contact.external ? '_blank' : undefined"
+            :rel="contact.external ? 'noopener noreferrer' : undefined"
+            class="link"
+          >
+            <ContactIcon :type="contact.type" />
             <span class="contact-label">{{ animatedLabels[index] }}</span>
             <span class="contact-value">{{ contact.value }}</span>
             <span class="contact-arrow" aria-hidden="true">↗</span>
           </a>
         </li>
       </ul>
+
+      <p v-if="contactLinks.length === 0" class="contacts-empty">
+        Контакты скоро появятся.
+      </p>
 
       <!-- Маленькая подпись снизу -->
       <div class="bottom-signature m-vertical">
@@ -41,7 +50,7 @@ import { getContactLinks } from '../config/contacts'
 
 const loading = ref(true)
 
-const contactLinks = ref(getContactLinks())
+const contactLinks = ref([])
 const animatedLabels = ref(contactLinks.value.map(() => ''))
 const bottomText = ref('Открыты к новым проектам')
 
@@ -75,14 +84,15 @@ const runScramble = (targetText, reactiveRef, delay = 0) => {
 
 const fetchContacts = async () => {
   try {
-    const response = await fetch(`${DIRECTUS_URL}/items/contacts?fields=email,bottom_text`)
-    if (response.ok) {
-      const { data } = await response.json()
-      contactLinks.value = getContactLinks(data?.email)
-      if (data?.bottom_text && data.bottom_text.trim().length > 2) bottomText.value = data.bottom_text
-    }
+    const fields = 'phone,email,telegram_url,max_url,whatsapp_url,bottom_text'
+    const response = await fetch(`${DIRECTUS_URL}/items/contacts?fields=${fields}`)
+    if (!response.ok) throw new Error(`CMS returned ${response.status}`)
+
+    const { data } = await response.json()
+    contactLinks.value = getContactLinks(data)
+    if (data?.bottom_text?.trim()) bottomText.value = data.bottom_text.trim()
   } catch (error) {
-    console.error('Ошибка получения контактов из Directus, используем демо-данные:', error)
+    console.error('Ошибка получения контактов из Directus:', error)
   } finally {
     loading.value = false
 
@@ -143,6 +153,7 @@ onUnmounted(() => {
   margin: 0;
   padding: 0;
   list-style: none;
+  width: 100%;
 }
 
 .contact-item {
@@ -186,6 +197,13 @@ onUnmounted(() => {
   opacity: 0.7;
 }
 
+.contacts-empty {
+  margin: auto;
+  font-size: clamp(20px, 1.25vw, 40px);
+  font-weight: 300;
+  opacity: 0.56;
+}
+
 @media (hover: hover) {
   .link:hover > .contact-label {
     transform: rotateX(180deg);
@@ -226,7 +244,12 @@ onUnmounted(() => {
   }
 
   .contact-email {
-    padding-left: 25%;
+    padding-left: 18%;
+    justify-content: center;
+  }
+
+  .contact-whatsapp {
+    padding-left: 8%;
     justify-content: center;
   }
 
