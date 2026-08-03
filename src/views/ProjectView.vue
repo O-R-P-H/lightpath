@@ -291,7 +291,7 @@ onUnmounted(() => {
 }
 
 .project-title-header {
-  font-size: 30px !important;
+  font-size: clamp(30px, 2.2vw, 84px) !important;
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: -0.03em;
@@ -313,7 +313,7 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .project-title-header {
-    font-size: 2.2vw !important;
+    font-size: clamp(30px, 2.2vw, 84px) !important;
   }
 }
 
@@ -415,7 +415,7 @@ onUnmounted(() => {
 }
 
 .about-label {
-  font-size: 15px !important;
+  font-size: clamp(15px, 1.1vw, 34px) !important;
   font-weight: 400 !important;
   margin: 0 0 1rem 0;
   letter-spacing: 0;
@@ -423,7 +423,7 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .about-label {
-    font-size: 1.1vw !important;
+    font-size: clamp(15px, 1.1vw, 34px) !important;
   }
 }
 
@@ -440,7 +440,7 @@ onUnmounted(() => {
 /* Стилизация кнопки заказа под макет (без дефолтного синего цвета) */
 .cta-link {
   display: inline-block;
-  font-size: 15px !important;
+  font-size: clamp(15px, 1.1vw, 34px) !important;
   font-weight: 400 !important;
   color: var(--color-front, #f1f1f0) !important; /* Белый цвет текста */
   border: 1px solid var(--color-front, #f1f1f0) !important; /* Белая рамка */
@@ -459,7 +459,7 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .cta-link {
-    font-size: 1.1vw !important;
+    font-size: clamp(15px, 1.1vw, 34px) !important;
   }
 }
 

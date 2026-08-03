@@ -171,8 +171,8 @@ onUnmounted(() => {
 
 @media (min-width: 1024px) {
   .text-container {
-    /* Широкий текстовый блок по макету (около 78% ширины экрана) */
-    max-width: 78% !important;
+    /* Ограничиваем длину строки на широких и 4K-экранах. */
+    max-width: min(78%, 1500px) !important;
   }
 }
 
@@ -290,7 +290,7 @@ html.reference-root-active {
   background-color: #090a16;
   margin: 0;
   padding: 0;
-  font-size: 7.5vw !important;
+  font-size: clamp(28px, 7.5vw, 58px) !important;
   line-height: 1 !important;
 
   /* Принудительно перебиваем шрифт на Inter для всех дочерних элементов */
@@ -307,7 +307,7 @@ html.reference-root-active {
 
 @media (min-width: 760px) {
   html.reference-root-active {
-    font-size: 3vw !important;
+    font-size: clamp(36px, 3vw, 116px) !important;
   }
 }
 

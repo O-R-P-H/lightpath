@@ -174,7 +174,7 @@ onUnmounted(() => {
 
 .link > .contact-label {
   display: inline-block;
-  font-size: clamp(25px, 1.75vw, 68px) !important;
+  font-size: clamp(25px, 1.75vw, 84px) !important;
   font-weight: 300 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -183,17 +183,17 @@ onUnmounted(() => {
 }
 
 .link > svg {
-  font-size: clamp(26px, 1.75vw, 66px);
+  font-size: clamp(26px, 1.75vw, 84px);
 }
 
 .contact-value {
-  font-size: clamp(16px, 0.9vw, 34px);
+  font-size: clamp(16px, 0.9vw, 44px);
   letter-spacing: 0;
   opacity: 0.56;
 }
 
 .contact-arrow {
-  font-size: clamp(18px, 1vw, 38px);
+  font-size: clamp(18px, 1vw, 48px);
   opacity: 0.7;
 }
 
@@ -217,7 +217,7 @@ onUnmounted(() => {
 }
 
 .bottom-signature > span {
-  font-size: 14px !important;
+  font-size: clamp(13px, 0.48vw, 22px) !important;
   font-weight: 300;
   opacity: 0.6;
   letter-spacing: 0;

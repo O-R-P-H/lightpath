@@ -280,7 +280,7 @@ onUnmounted(() => {
 
 .project-title-link > span, .project-year-link > span {
   display: inline-block;
-  font-size: 1.35vw !important;
+  font-size: clamp(18px, 1.35vw, 54px) !important;
   font-weight: 300 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -324,14 +324,14 @@ html.reference-root-active {
   background-color: #090a16;
   margin: 0;
   padding: 0;
-  font-size: 7.5vw !important;
+  font-size: clamp(28px, 7.5vw, 58px) !important;
   line-height: 1 !important;
   font-family: 'Inter', sans-serif !important;
 }
 
 @media (min-width: 760px) {
   html.reference-root-active {
-    font-size: 3vw !important;
+    font-size: clamp(36px, 3vw, 116px) !important;
   }
 }
 

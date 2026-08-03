@@ -14,10 +14,14 @@
 
           <p class="contact-modal__lead">Выберите удобный способ связи — Николай ответит и уточнит детали проекта.</p>
 
-          <ul class="contact-modal__links">
-            <li v-for="contact in contacts" :key="contact.label">
-              <a :href="contact.href" :target="contact.href.startsWith('http') ? '_blank' : undefined" rel="noopener">
-                <ContactIcon :type="contact.label" />
+          <ul v-if="contacts.length" class="contact-modal__links">
+            <li v-for="contact in contacts" :key="contact.type">
+              <a
+                :href="contact.href"
+                :target="contact.external ? '_blank' : undefined"
+                :rel="contact.external ? 'noopener noreferrer' : undefined"
+              >
+                <ContactIcon :type="contact.type" />
                 <span class="contact-modal__label">{{ contact.label }}</span>
                 <span class="contact-modal__value">{{ contact.value }}</span>
                 <span aria-hidden="true">↗</span>
@@ -25,7 +29,11 @@
             </li>
           </ul>
 
-          <p class="contact-modal__note">В MAX найдите контакт по номеру телефона.</p>
+          <p v-else class="contact-modal__empty">
+            {{ contactsLoading ? 'Загружаем контакты…' : 'Контакты временно недоступны.' }}
+          </p>
+
+          <p v-if="hasMaxContact" class="contact-modal__note">Ссылка откроется в мессенджере MAX.</p>
         </div>
       </div>
     </transition>
@@ -33,14 +41,36 @@
 </template>
 
 <script setup>
-import { nextTick, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref } from 'vue'
 import ContactIcon from './ContactIcon.vue'
 import { getContactLinks } from '../config/contacts'
+import { DIRECTUS_URL } from '../utils/directus'
 
 const isOpen = ref(false)
 const closeButton = ref(null)
-const contacts = getContactLinks()
+const contacts = ref([])
+const contactsLoading = ref(false)
+const contactsLoaded = ref(false)
+const hasMaxContact = computed(() => contacts.value.some((contact) => contact.type === 'max'))
 let previousOverflow = ''
+
+const fetchContacts = async () => {
+  if (contactsLoaded.value || contactsLoading.value) return
+  contactsLoading.value = true
+
+  try {
+    const fields = 'phone,email,telegram_url,max_url,whatsapp_url'
+    const response = await fetch(`${DIRECTUS_URL}/items/contacts?fields=${fields}`)
+    if (!response.ok) throw new Error(`CMS returned ${response.status}`)
+    const { data } = await response.json()
+    contacts.value = getContactLinks(data)
+    contactsLoaded.value = true
+  } catch (error) {
+    console.error('Ошибка получения контактов для формы заказа:', error)
+  } finally {
+    contactsLoading.value = false
+  }
+}
 
 const handleKeydown = (event) => {
   if (event.key === 'Escape') closeModal()
@@ -51,6 +81,7 @@ const openModal = async () => {
   previousOverflow = document.body.style.overflow
   document.body.style.overflow = 'hidden'
   window.addEventListener('keydown', handleKeydown)
+  fetchContacts()
   await nextTick()
   closeButton.value?.focus()
 }
@@ -99,7 +130,7 @@ onUnmounted(closeModal)
 }
 
 .contact-modal__panel {
-  width: min(720px, 100%);
+  width: min(clamp(720px, 44vw, 1200px), 100%);
   border: 1px solid rgba(241, 241, 240, 0.28);
   background:
     radial-gradient(circle at 82% 18%, rgba(104, 103, 198, 0.22), transparent 42%),
@@ -107,7 +138,7 @@ onUnmounted(closeModal)
   color: #f1f1f0;
   letter-spacing: 0;
   line-height: normal;
-  padding: clamp(22px, 3vw, 48px);
+  padding: clamp(22px, 3vw, 86px);
   box-shadow: 0 32px 100px rgba(0, 0, 0, 0.46);
 }
 
@@ -120,36 +151,37 @@ onUnmounted(closeModal)
 
 .contact-modal__header h2 {
   margin: 0;
-  font-size: clamp(34px, 4vw, 68px);
+  font-size: clamp(34px, 4vw, 108px);
   font-weight: 400;
   letter-spacing: -0.05em;
   line-height: 0.95;
 }
 
 .contact-modal__close {
-  width: 42px;
-  height: 42px;
+  width: clamp(42px, 2.6vw, 70px);
+  height: clamp(42px, 2.6vw, 70px);
   flex: 0 0 auto;
   border: 1px solid rgba(241, 241, 240, 0.35);
   border-radius: 50%;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 28px;
+  font-size: clamp(28px, 1.7vw, 46px);
   line-height: 1;
 }
 
 .contact-modal__lead,
-.contact-modal__note {
-  max-width: 540px;
-  margin: 24px 0;
-  font-size: clamp(16px, 1.15vw, 24px);
+.contact-modal__note,
+.contact-modal__empty {
+  max-width: 38ch;
+  margin: clamp(24px, 1.8vw, 48px) 0;
+  font-size: clamp(16px, 1.05vw, 30px);
   line-height: 1.45;
   opacity: 0.76;
 }
 
 .contact-modal__links {
-  margin: 30px 0 0;
+  margin: clamp(30px, 2vw, 54px) 0 0;
   padding: 0;
   list-style: none;
   border-top: 1px solid rgba(241, 241, 240, 0.18);
@@ -159,12 +191,12 @@ onUnmounted(closeModal)
   display: grid;
   grid-template-columns: auto minmax(90px, 0.6fr) 1fr auto;
   align-items: center;
-  gap: 16px;
-  padding: 18px 0;
+  gap: clamp(12px, 1vw, 28px);
+  padding: clamp(18px, 1.3vw, 36px) 0;
   border-bottom: 1px solid rgba(241, 241, 240, 0.18);
   color: inherit;
   text-decoration: none;
-  font-size: clamp(17px, 1.25vw, 28px);
+  font-size: clamp(17px, 1.15vw, 34px);
 }
 
 .contact-modal__links svg {
@@ -178,7 +210,14 @@ onUnmounted(closeModal)
 
 .contact-modal__note {
   margin-bottom: 0;
-  font-size: clamp(13px, 0.85vw, 18px);
+  font-size: clamp(13px, 0.72vw, 22px);
+}
+
+.contact-modal__empty {
+  padding: clamp(24px, 2vw, 52px) 0;
+  border-top: 1px solid rgba(241, 241, 240, 0.18);
+  border-bottom: 1px solid rgba(241, 241, 240, 0.18);
+  opacity: 0.62;
 }
 
 .modal-fade-enter-active,
