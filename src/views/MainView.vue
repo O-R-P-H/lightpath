@@ -449,7 +449,7 @@ onUnmounted(() => {
 
   .scene-frame {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 2;
     aspect-ratio: 1.22 / 1;
   }
 
@@ -464,7 +464,7 @@ onUnmounted(() => {
 
   .temperature-filter {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 14px;
