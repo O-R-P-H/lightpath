@@ -458,7 +458,7 @@ onUnmounted(() => {
     gap: clamp(14px, 2.2vh, 20px);
     align-content: center;
     min-height: 0;
-    padding: clamp(20px, 4vh, 36px) 20px clamp(150px, 18vh, 170px);
+    padding: clamp(28px, 6vh, 56px) 20px;
   }
 
   .scene-frame {
