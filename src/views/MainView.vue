@@ -412,6 +412,8 @@ onUnmounted(() => {
 
 @media (max-width: 759px) {
   .hero-wrapper {
+    display: flex;
+    flex-direction: column;
     min-height: 100svh;
     overflow: visible;
   }
@@ -421,8 +423,8 @@ onUnmounted(() => {
     top: auto;
     right: auto;
     left: auto;
+    flex: 0 0 auto;
     grid-template-columns: 1fr;
-    gap: clamp(22px, 6vh, 46px);
     padding: var(--space-s) calc(var(--space-s) + 54px) 0 var(--space-s);
   }
 
@@ -432,25 +434,23 @@ onUnmounted(() => {
   }
 
   .hero-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px 16px;
-    font-size: clamp(22px, 6vw, 34px);
+    display: none;
   }
 
   .scene-explorer {
+    flex: 1 1 auto;
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
-    gap: 20px;
-    align-content: start;
-    min-height: auto;
-    padding: clamp(42px, 9vh, 76px) var(--space-s) 116px;
+    gap: clamp(16px, 2.5vh, 24px);
+    align-content: center;
+    min-height: 0;
+    padding: clamp(20px, 4vh, 36px) var(--space-s) clamp(150px, 18vh, 170px);
   }
 
   .scene-frame {
     grid-column: 1;
     grid-row: 2;
-    aspect-ratio: 1.22 / 1;
+    aspect-ratio: 1 / 1;
   }
 
   .fixture-filter {
@@ -482,6 +482,10 @@ onUnmounted(() => {
     text-align: right;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+  }
+
+  .more {
+    position: absolute;
   }
 }
 
