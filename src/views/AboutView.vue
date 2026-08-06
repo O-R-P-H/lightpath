@@ -8,7 +8,7 @@
       <!-- Сетка заголовков (дублирует структуру первого экрана) -->
       <div class="about-grid-header">
         <BrandLink class="about-main-title" />
-        <div class="about-sec-title">Обо мне</div>
+        <div class="about-sec-title" ref="aboutTitleRef">Обо мне</div>
       </div>
 
       <!-- Контентная область -->
@@ -43,13 +43,16 @@ import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
 import { sanitizeHtml } from '../utils/sanitize'
 import { DIRECTUS_URL, assetUrl } from '../utils/directus'
+import { scrambleElementText } from '../utils/textScramble'
 
 const textAbout = ref('')
 const photoUrl = ref('')
 const loading = ref(true)
 const error = ref(false)
 const textContainerRef = ref(null)
+const aboutTitleRef = ref(null)
 const sanitizedTextAbout = computed(() => sanitizeHtml(textAbout.value))
+const animationCleanups = []
 
 const fetchAboutData = async () => {
   try {
@@ -83,6 +86,11 @@ const fetchAboutData = async () => {
       // Запускаем дешифрацию строго в следующем тике после монтирования DOM
       nextTick(() => {
         if (textContainerRef.value) {
+          animationCleanups.push(scrambleElementText(textContainerRef.value, {
+            delay: 120,
+            duration: 920,
+            stagger: 90,
+          }))
           textContainerRef.value.style.opacity = '1'
         }
       })
@@ -96,10 +104,15 @@ const fetchAboutData = async () => {
 
 onMounted(() => {
   document.documentElement.classList.add('reference-root-active')
+  animationCleanups.push(scrambleElementText(aboutTitleRef.value, {
+    delay: 100,
+    duration: 700,
+  }))
   fetchAboutData()
 })
 
 onUnmounted(() => {
+  animationCleanups.forEach((cleanup) => cleanup())
   document.documentElement.classList.remove('reference-root-active')
 })
 </script>

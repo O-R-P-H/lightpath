@@ -29,7 +29,7 @@
 
         <!-- Колонка 3: Список проектов (is_in_menu: true) -->
         <div class="projects-col-3">
-          <ul class="projects-list">
+          <ul class="projects-list" ref="projectsListRef">
             <li class="section-column-title" ref="listTitleRef">Проекты</li>
 
             <li
@@ -73,6 +73,7 @@ import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
 import ProjectOrderModal from '../components/ProjectOrderModal.vue'
 import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus'
+import { scrambleElementText } from '../utils/textScramble'
 
 const loading = ref(true)
 const allProjects = ref([])
@@ -80,6 +81,25 @@ const hoveredImage = ref('')
 const hoveredPreview = ref('')
 const hoveredRowTop = ref(0)
 const listTitleRef = ref(null)
+const projectsListRef = ref(null)
+const animationCleanups = []
+
+const animateProjectTitles = () => {
+  if (listTitleRef.value) {
+    animationCleanups.push(scrambleElementText(listTitleRef.value, {
+      delay: 80,
+      duration: 650,
+    }))
+  }
+
+  const titleElements = projectsListRef.value?.querySelectorAll('.project-title-link > span') || []
+  titleElements.forEach((element, index) => {
+    animationCleanups.push(scrambleElementText(element, {
+      delay: 180 + index * 120,
+      duration: 850,
+    }))
+  })
+}
 
 const fetchProjects = async () => {
   try {
@@ -94,6 +114,8 @@ const fetchProjects = async () => {
 
     // Инициализируем первое превью по умолчанию
     nextTick(() => {
+      animateProjectTitles()
+
       if (primaryProjects.value.length > 0) {
         setHoveredPreview(primaryProjects.value[0])
 
@@ -139,6 +161,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  animationCleanups.forEach((cleanup) => cleanup())
   document.documentElement.classList.remove('reference-root-active')
 })
 </script>
