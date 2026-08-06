@@ -243,19 +243,21 @@ onUnmounted(() => {
 .scene-explorer {
   display: grid;
   grid-template-columns: minmax(0, 40.5vw) minmax(220px, 24vw);
-  gap: 2.1vw;
-  align-items: start;
+  grid-template-rows: auto auto;
+  column-gap: 11vw;
+  align-content: end;
   min-height: 100vh;
-  padding-top: 20.5vh;
-  padding-left: 9.5vw;
+  padding: max(150px, 16vh) 0 var(--space-s) var(--space-s);
 }
 
 .visual-column {
-  min-width: 0;
+  display: contents;
 }
 
 .scene-frame {
   position: relative;
+  grid-column: 1;
+  grid-row: 1;
   aspect-ratio: 1.5 / 1;
   overflow: hidden;
 }
@@ -276,6 +278,8 @@ onUnmounted(() => {
 }
 
 .fixture-filter {
+  grid-column: 1;
+  grid-row: 2;
   display: flex;
   flex-wrap: wrap;
   gap: clamp(15px, 1.7vw, 68px);
@@ -284,10 +288,12 @@ onUnmounted(() => {
 }
 
 .temperature-filter {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
   display: flex;
   flex-direction: column;
   gap: clamp(24px, 5.2vh, 112px);
-  margin-top: 11.7vh;
 }
 
 .filter-button {
@@ -350,8 +356,8 @@ onUnmounted(() => {
 
 @media (max-width: 1024px) and (min-width: 760px) {
   .scene-explorer {
-    grid-template-columns: minmax(0, 54vw) minmax(180px, 28vw);
-    padding-left: 4vw;
+    grid-template-columns: minmax(0, 54vw) minmax(180px, 30vw);
+    column-gap: 5vw;
   }
 
   .hero-nav {
@@ -393,16 +399,26 @@ onUnmounted(() => {
 
   .scene-explorer {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
     gap: clamp(34px, 9vw, 64px);
+    align-content: start;
     min-height: auto;
     padding: clamp(52px, 11vh, 92px) var(--space-s) 116px;
   }
 
+  .visual-column {
+    display: block;
+  }
+
   .scene-frame {
+    grid-column: auto;
+    grid-row: auto;
     aspect-ratio: 1.22 / 1;
   }
 
   .fixture-filter {
+    grid-column: auto;
+    grid-row: auto;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px 14px;
@@ -410,6 +426,8 @@ onUnmounted(() => {
   }
 
   .temperature-filter {
+    grid-column: auto;
+    grid-row: auto;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 14px;
