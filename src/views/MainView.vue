@@ -247,7 +247,7 @@ onUnmounted(() => {
   column-gap: 11vw;
   align-content: end;
   min-height: 100vh;
-  padding: max(150px, 16vh) 0 var(--space-s) var(--space-s);
+  padding: max(150px, 16vh) 0 clamp(24px, 3vh, 64px) clamp(32px, 3vw, 96px);
 }
 
 .visual-column {
