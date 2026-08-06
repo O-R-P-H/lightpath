@@ -244,7 +244,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 40.5vw) minmax(220px, 24vw);
   grid-template-rows: auto auto;
-  column-gap: 11vw;
+  column-gap: 1vw;
   align-content: end;
   min-height: 100vh;
   padding: max(150px, 16vh) 0 clamp(24px, 3vh, 64px) clamp(32px, 3vw, 96px);
