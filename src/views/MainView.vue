@@ -576,6 +576,7 @@ onUnmounted(() => {
 
   .more {
     position: absolute;
+    display: none;
   }
 }
 
