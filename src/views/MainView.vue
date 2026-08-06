@@ -260,15 +260,13 @@ onUnmounted(() => {
   margin: 0;
   padding: 0;
   color: #fff;
+  font-size: 1rem;
   font-weight: 400;
   letter-spacing: -.02em;
+  word-spacing: .12em;
   line-height: 1;
   mix-blend-mode: difference;
   pointer-events: auto;
-}
-
-.hero-title {
-  font-size: 1rem;
 }
 
 .scramble-line {
@@ -277,13 +275,11 @@ onUnmounted(() => {
 
 .hero-list {
   list-style: none;
-  font-size: clamp(16px, 1.2vw, 46px);
-  line-height: 1.08;
 }
 
 .hero-list li {
-  min-height: 1.08em;
-  margin-bottom: .15em;
+  min-height: 1em;
+  margin-bottom: .18rem;
 }
 
 .scene-explorer {
@@ -439,7 +435,7 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px 16px;
-    font-size: clamp(14px, 4vw, 18px);
+    font-size: clamp(22px, 6vw, 34px);
   }
 
   .scene-explorer {
