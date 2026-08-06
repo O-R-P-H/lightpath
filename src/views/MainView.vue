@@ -2,54 +2,36 @@
   <div class="hero-wrapper">
     <Header />
 
-    <header class="hero-heading">
+    <header class="hero-header">
       <router-link to="/" class="hero-home-link" aria-label="На главную">
         <h1 class="hero-title">
-          <span v-for="line in titleLines" :key="line">{{ line }}</span>
+          <span class="scramble-line">{{ titleLine1 }}</span>
+          <br />
+          <span class="scramble-line">{{ titleLine2 }}</span>
         </h1>
       </router-link>
+
+      <ul class="hero-list" aria-label="Направления студии">
+        <li v-for="(tag, index) in scrambledTags" :key="index">
+          {{ tag }}
+        </li>
+      </ul>
     </header>
 
-    <nav class="hero-nav" aria-label="Основная навигация">
-      <router-link to="/about">Обо мне</router-link>
-      <router-link to="/projects">Проекты</router-link>
-      <router-link to="/gallery">Услуги</router-link>
-      <router-link to="/contacts">Контакты</router-link>
-    </nav>
-
     <main class="scene-explorer" aria-label="Подбор светового решения">
-      <section class="visual-column">
-        <div class="scene-frame" :style="{ backgroundColor: placeholderColor }">
-          <Transition name="scene-fade" mode="out-in">
-            <img
-              v-if="currentScene?.image"
-              :key="currentScene.id"
-              class="scene-image"
-              :src="currentImageUrl"
-              :alt="`${selectedFixture} — ${selectedTemperature}`"
-              @error="fallbackToOriginalAsset($event, currentScene.image)"
-            />
-            <div v-else key="placeholder" class="solid-placeholder" aria-hidden="true"></div>
-          </Transition>
-          <span class="visually-hidden" aria-live="polite">
-            {{ currentScene?.image ? `${selectedFixture}, ${selectedTemperature}` : 'Однотонная заглушка' }}
-          </span>
-        </div>
-
-        <nav class="fixture-filter" aria-label="Зона освещения">
-          <button
-            v-for="option in fixtureOptions"
-            :key="option"
-            class="filter-button"
-            :class="{ active: option === selectedFixture }"
-            type="button"
-            :aria-pressed="option === selectedFixture"
-            @click="selectFixture(option)"
-          >
-            {{ option }}
-          </button>
-        </nav>
-      </section>
+      <nav class="fixture-filter" aria-label="Зона освещения">
+        <button
+          v-for="option in fixtureOptions"
+          :key="option"
+          class="filter-button"
+          :class="{ active: option === selectedFixture }"
+          type="button"
+          :aria-pressed="option === selectedFixture"
+          @click="selectFixture(option)"
+        >
+          {{ option }}
+        </button>
+      </nav>
 
       <aside class="temperature-filter" aria-label="Сценарий света">
         <button
@@ -64,9 +46,28 @@
           {{ option }}
         </button>
       </aside>
+
+      <div class="scene-frame" :style="{ backgroundColor: placeholderColor }">
+        <Transition name="scene-fade" mode="out-in">
+          <img
+            v-if="currentScene?.image"
+            :key="currentScene.id"
+            class="scene-image"
+            :src="currentImageUrl"
+            :alt="`${selectedFixture} — ${selectedTemperature}`"
+            @error="fallbackToOriginalAsset($event, currentScene.image)"
+          />
+          <div v-else key="placeholder" class="solid-placeholder" aria-hidden="true"></div>
+        </Transition>
+        <span class="visually-hidden" aria-live="polite">
+          {{ currentScene?.image ? `${selectedFixture}, ${selectedTemperature}` : 'Однотонная заглушка' }}
+        </span>
+      </div>
     </main>
 
-    <div class="copy" aria-label="Копирайт">© 2026</div>
+    <router-link class="link m-vertical more" to="/about">
+      <span>Подробнее</span>
+    </router-link>
   </div>
 </template>
 
@@ -79,8 +80,16 @@ const DEFAULT_TITLE = 'Студия светового дизайна\nМацн�
 const DEFAULT_FIXTURES = ['Болларды', 'Ступени', 'Забор', 'Деревья/кусты', 'Фасадные', 'Линейные']
 const DEFAULT_TEMPERATURES = ['Дневной белый', 'Нейтральный белый', 'Теплый белый', 'Янтарный']
 const DEFAULT_PLACEHOLDER_COLOR = '#171821'
+const TARGET_TAGS = [
+  'Светодизайн', 'Архитектура', 'Атмосфера', 'Концепт',
+  'Инженерия', 'Искусство', 'Пространство', 'Влияние',
+]
+const GLYPHS = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-'
 
-const pageTitle = ref(DEFAULT_TITLE)
+const [targetTitleLine1, targetTitleLine2] = DEFAULT_TITLE.split('\n')
+const titleLine1 = ref('')
+const titleLine2 = ref('')
+const scrambledTags = ref(TARGET_TAGS.map(() => ''))
 const fixtureOptions = ref(DEFAULT_FIXTURES)
 const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
@@ -88,15 +97,35 @@ const scenes = ref([])
 const selectedFixture = ref(DEFAULT_FIXTURES[0])
 const selectedTemperature = ref(DEFAULT_TEMPERATURES[0])
 const abortController = new AbortController()
+const scrambleTimeouts = []
+const scrambleIntervals = []
 
-const titleLines = computed(() => {
-  const lines = pageTitle.value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
+const runScramble = (targetText, reactiveRef, delay = 0) => {
+  const timeout = window.setTimeout(() => {
+    let iterations = 0
+    const maxIterations = targetText.length + 4
+    const interval = window.setInterval(() => {
+      reactiveRef.value = targetText
+        .split('')
+        .map((char, index) => {
+          if (char === ' ') return ' '
+          if (index < iterations - 3) return char
+          return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
+        })
+        .join('')
 
-  return lines.length ? lines : DEFAULT_TITLE.split('\n')
-})
+      iterations += 1
+      if (iterations >= maxIterations) {
+        window.clearInterval(interval)
+        reactiveRef.value = targetText
+      }
+    }, 55)
+
+    scrambleIntervals.push(interval)
+  }, delay)
+
+  scrambleTimeouts.push(timeout)
+}
 
 const currentScene = computed(() => (
   scenes.value.find((scene) => (
@@ -138,7 +167,7 @@ const selectTemperature = (temperature) => {
 
 const loadHomepage = async () => {
   const query = new URLSearchParams({
-    fields: 'title,fixture_filters,temperature_filters,placeholder_color,scenes.id,scenes.sort,scenes.fixture_filter,scenes.temperature_filter,scenes.image',
+    fields: 'fixture_filters,temperature_filters,placeholder_color,scenes.id,scenes.sort,scenes.fixture_filter,scenes.temperature_filter,scenes.image',
     'deep[scenes][_sort]': 'sort',
     _: String(Date.now()),
   })
@@ -153,7 +182,6 @@ const loadHomepage = async () => {
     const payload = await response.json()
     const data = payload?.data || {}
 
-    pageTitle.value = String(data.title || '').trim() || DEFAULT_TITLE
     fixtureOptions.value = parseOptions(data.fixture_filters, DEFAULT_FIXTURES)
     temperatureOptions.value = parseOptions(data.temperature_filters, DEFAULT_TEMPERATURES)
     placeholderColor.value = parseColor(data.placeholder_color)
@@ -177,10 +205,22 @@ const loadHomepage = async () => {
 onMounted(() => {
   document.documentElement.classList.add('reference-root-active')
   loadHomepage()
+  runScramble(targetTitleLine1, titleLine1, 150)
+  runScramble(targetTitleLine2, titleLine2, 450)
+
+  TARGET_TAGS.forEach((tag, index) => {
+    const reactiveWrapper = {
+      get value() { return scrambledTags.value[index] },
+      set value(value) { scrambledTags.value[index] = value },
+    }
+    runScramble(tag, reactiveWrapper, 750 + index * 120)
+  })
 })
 
 onUnmounted(() => {
   abortController.abort()
+  scrambleTimeouts.forEach((timeout) => window.clearTimeout(timeout))
+  scrambleIntervals.forEach((interval) => window.clearInterval(interval))
   document.documentElement.classList.remove('reference-root-active')
 })
 </script>
@@ -194,12 +234,17 @@ onUnmounted(() => {
   background: transparent;
 }
 
-.hero-heading {
+.hero-header {
   position: absolute;
   top: var(--space-s);
-  left: var(--space-s);
+  right: 0;
+  left: 0;
   z-index: 2;
-  max-width: 62vw;
+  display: grid;
+  grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr);
+  gap: var(--space-m);
+  padding: 0 var(--space-s);
+  pointer-events: none;
 }
 
 .hero-home-link {
@@ -207,37 +252,38 @@ onUnmounted(() => {
   width: fit-content;
   color: inherit;
   text-decoration: none;
+  pointer-events: auto;
+}
+
+.hero-title,
+.hero-list {
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  font-weight: 400;
+  letter-spacing: -.02em;
+  line-height: 1;
+  mix-blend-mode: difference;
+  pointer-events: auto;
 }
 
 .hero-title {
-  display: grid;
-  margin: 0;
-  color: #fff;
   font-size: 1rem;
-  font-weight: 400;
-  letter-spacing: -.025em;
-  line-height: .96;
-  mix-blend-mode: difference;
 }
 
-.hero-title span {
+.scramble-line {
   white-space: nowrap;
 }
 
-.hero-nav {
-  position: absolute;
-  top: var(--space-s);
-  left: 67.7vw;
-  z-index: 2;
-  display: grid;
-  line-height: .96;
+.hero-list {
+  list-style: none;
+  font-size: clamp(16px, 1.2vw, 46px);
+  line-height: 1.08;
 }
 
-.hero-nav a {
-  width: fit-content;
-  color: inherit;
-  text-decoration: none;
-  transition: opacity .25s ease;
+.hero-list li {
+  min-height: 1.08em;
+  margin-bottom: .15em;
 }
 
 .scene-explorer {
@@ -248,10 +294,6 @@ onUnmounted(() => {
   align-content: end;
   min-height: 100vh;
   padding: max(150px, 16vh) 0 clamp(24px, 3vh, 64px) clamp(32px, 3vw, 96px);
-}
-
-.visual-column {
-  display: contents;
 }
 
 .scene-frame {
@@ -318,13 +360,23 @@ onUnmounted(() => {
   color: #fff;
 }
 
-.copy {
+.link {
+  position: relative;
+  color: var(--color-front);
+  text-decoration: none;
+  transform: translateZ(0);
+}
+
+.link > span {
+  display: inline-block;
+  transition: transform .3s;
+}
+
+.more {
   position: fixed;
   right: var(--space-s);
   bottom: var(--space-s);
-  z-index: 2;
-  line-height: .9;
-  white-space: nowrap;
+  z-index: 3;
 }
 
 .visually-hidden {
@@ -349,8 +401,8 @@ onUnmounted(() => {
 }
 
 @media (hover: hover) {
-  .hero-nav a:hover {
-    opacity: .56;
+  .link:hover > span {
+    transform: rotateX(180deg);
   }
 }
 
@@ -360,9 +412,6 @@ onUnmounted(() => {
     column-gap: 5vw;
   }
 
-  .hero-nav {
-    left: 64vw;
-  }
 }
 
 @media (max-width: 759px) {
@@ -371,16 +420,14 @@ onUnmounted(() => {
     overflow: visible;
   }
 
-  .hero-heading,
-  .hero-nav {
+  .hero-header {
     position: relative;
     top: auto;
+    right: auto;
     left: auto;
-  }
-
-  .hero-heading {
-    max-width: calc(100% - 64px);
-    padding: var(--space-s) 0 0 var(--space-s);
+    grid-template-columns: 1fr;
+    gap: clamp(22px, 6vh, 46px);
+    padding: var(--space-s) calc(var(--space-s) + 54px) 0 var(--space-s);
   }
 
   .hero-title {
@@ -388,46 +435,40 @@ onUnmounted(() => {
     line-height: 1;
   }
 
-  .hero-nav {
-    grid-template-columns: repeat(2, max-content);
-    gap: 4px clamp(20px, 8vw, 44px);
-    margin-top: clamp(34px, 9vh, 72px);
-    padding-left: var(--space-s);
-    font-size: clamp(17px, 5vw, 24px);
-    line-height: 1.05;
+  .hero-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 16px;
+    font-size: clamp(14px, 4vw, 18px);
   }
 
   .scene-explorer {
     grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    gap: clamp(34px, 9vw, 64px);
+    grid-template-rows: auto auto auto;
+    gap: 20px;
     align-content: start;
     min-height: auto;
-    padding: clamp(52px, 11vh, 92px) var(--space-s) 116px;
-  }
-
-  .visual-column {
-    display: block;
+    padding: clamp(42px, 9vh, 76px) var(--space-s) 116px;
   }
 
   .scene-frame {
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 1;
+    grid-row: 3;
     aspect-ratio: 1.22 / 1;
   }
 
   .fixture-filter {
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 1;
+    grid-row: 1;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px 14px;
-    padding-top: 20px;
+    padding-top: 0;
   }
 
   .temperature-filter {
-    grid-column: auto;
-    grid-row: auto;
+    grid-column: 1;
+    grid-row: 2;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 14px;
@@ -440,15 +481,18 @@ onUnmounted(() => {
     font-size: clamp(14px, 4.2vw, 18px);
   }
 
-  .copy {
-    font-size: clamp(18px, 5.4vw, 30px);
+  .m-vertical {
+    display: inline-block;
+    text-align: right;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .scene-fade-enter-active,
   .scene-fade-leave-active,
-  .hero-nav a,
+  .link > span,
   .filter-button {
     transition: none;
   }
