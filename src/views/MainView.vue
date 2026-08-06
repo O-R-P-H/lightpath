@@ -20,31 +20,37 @@
 
     <main class="scene-explorer" aria-label="Подбор светового решения">
       <nav class="fixture-filter" aria-label="Зона освещения">
-        <button
-          v-for="option in fixtureOptions"
-          :key="option"
-          class="filter-button"
-          :class="{ active: option === selectedFixture }"
-          type="button"
-          :aria-pressed="option === selectedFixture"
-          @click="selectFixture(option)"
-        >
-          {{ option }}
-        </button>
+        <p class="filter-heading">Локация</p>
+        <div class="filter-options">
+          <button
+            v-for="option in fixtureOptions"
+            :key="option"
+            class="filter-button"
+            :class="{ active: option === selectedFixture }"
+            type="button"
+            :aria-pressed="option === selectedFixture"
+            @click="selectFixture(option)"
+          >
+            {{ option }}
+          </button>
+        </div>
       </nav>
 
       <aside class="temperature-filter" aria-label="Сценарий света">
-        <button
-          v-for="option in temperatureOptions"
-          :key="option"
-          class="filter-button"
-          :class="{ active: option === selectedTemperature }"
-          type="button"
-          :aria-pressed="option === selectedTemperature"
-          @click="selectTemperature(option)"
-        >
-          {{ option }}
-        </button>
+        <p class="filter-heading">Температура света</p>
+        <div class="filter-options">
+          <button
+            v-for="option in temperatureOptions"
+            :key="option"
+            class="filter-button"
+            :class="{ active: option === selectedTemperature }"
+            type="button"
+            :aria-pressed="option === selectedTemperature"
+            @click="selectTemperature(option)"
+          >
+            {{ option }}
+          </button>
+        </div>
       </aside>
 
       <div class="scene-frame" :style="{ backgroundColor: placeholderColor }">
@@ -334,6 +340,14 @@ onUnmounted(() => {
   gap: clamp(24px, 5.2vh, 112px);
 }
 
+.filter-heading {
+  display: none;
+}
+
+.filter-options {
+  display: contents;
+}
+
 .filter-button {
   appearance: none;
   margin: 0;
@@ -439,42 +453,86 @@ onUnmounted(() => {
 
   .scene-explorer {
     flex: 1 1 auto;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto;
-    gap: clamp(16px, 2.5vh, 24px);
+    gap: clamp(14px, 2.2vh, 20px);
     align-content: center;
     min-height: 0;
-    padding: clamp(20px, 4vh, 36px) var(--space-s) clamp(150px, 18vh, 170px);
+    padding: clamp(20px, 4vh, 36px) 20px clamp(150px, 18vh, 170px);
   }
 
   .scene-frame {
     grid-column: 1;
     grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
     aspect-ratio: 1 / 1;
   }
 
   .fixture-filter {
     grid-column: 1;
     grid-row: 1;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px 14px;
-    padding-top: 0;
+    align-self: stretch;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
   }
 
   .temperature-filter {
     grid-column: 1;
     grid-row: 3;
+    align-self: stretch;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .filter-heading {
+    display: block;
+    margin: 0 0 10px;
+    color: rgba(241, 241, 240, .5);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .filter-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 14px;
-    margin-top: 0;
-    padding-top: 24px;
-    border-top: 1px solid rgba(241, 241, 240, .16);
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
   }
 
   .filter-button {
-    font-size: clamp(14px, 4.2vw, 18px);
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 8px;
+    border: 1px solid rgba(241, 241, 240, .22);
+    border-radius: 10px;
+    color: rgba(241, 241, 240, .72);
+    font-size: clamp(13px, 3.6vw, 16px);
+    line-height: 1.05;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  .filter-button.active {
+    border-color: var(--color-front);
+    color: var(--color-back);
+    background: var(--color-front);
+  }
+
+  .filter-button:focus-visible {
+    outline: 2px solid var(--color-front);
+    outline-offset: 2px;
   }
 
   .m-vertical {
