@@ -493,41 +493,73 @@ onUnmounted(() => {
 
   .filter-heading {
     display: block;
-    margin: 0 0 10px;
-    color: rgba(241, 241, 240, .5);
-    font-size: 11px;
+    margin: 0 2px 8px;
+    color: rgba(241, 241, 240, .46);
+    font-size: 10px;
     font-weight: 500;
-    letter-spacing: .12em;
+    letter-spacing: .1em;
     line-height: 1.2;
     text-transform: uppercase;
   }
 
   .filter-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    gap: 4px;
     width: 100%;
     min-width: 0;
+    padding: 4px;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, .13);
+    border-radius: 999px;
+    box-sizing: border-box;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .035));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .12),
+      inset 0 -1px 0 rgba(0, 0, 0, .18),
+      0 8px 24px rgba(0, 0, 0, .14);
+    backdrop-filter: blur(18px) saturate(145%);
+    scroll-padding-inline: 4px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-options::-webkit-scrollbar {
+    display: none;
   }
 
   .filter-button {
-    width: 100%;
-    min-width: 0;
-    min-height: 44px;
-    padding: 10px 8px;
-    border: 1px solid rgba(241, 241, 240, .22);
-    border-radius: 10px;
-    color: rgba(241, 241, 240, .72);
-    font-size: clamp(13px, 3.6vw, 16px);
-    line-height: 1.05;
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: rgba(241, 241, 240, .62);
+    background: transparent;
+    font-size: clamp(13px, 3.5vw, 15px);
+    line-height: 1;
     text-align: center;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    scroll-snap-align: center;
+    transition:
+      color .25s ease,
+      background-color .25s ease,
+      border-color .25s ease,
+      box-shadow .25s ease;
   }
 
   .filter-button.active {
-    border-color: var(--color-front);
-    color: var(--color-back);
-    background: var(--color-front);
+    border-color: rgba(255, 255, 255, .24);
+    color: #fff;
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .09));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .28),
+      0 3px 12px rgba(0, 0, 0, .2);
   }
 
   .filter-button:focus-visible {
