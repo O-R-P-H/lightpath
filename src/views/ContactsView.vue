@@ -265,22 +265,77 @@ onUnmounted(() => {
 
 /* --- НАСТРОЙКИ ДЛЯ МОБИЛЬНЫХ (<= 759px) --- */
 @media (max-width: 759px) {
+  .contacts-section {
+    min-height: 100svh;
+    padding: 88px 20px 72px;
+  }
+
+  .contacts-brand {
+    top: 16px;
+    left: 20px;
+    max-width: calc(100% - 96px);
+    font-size: clamp(18px, 5.2vw, 22px);
+  }
+
+  .contacts-list {
+    gap: 0;
+    border-top: 1px solid rgba(241, 241, 240, 0.16);
+  }
+
   .link > .contact-label {
-    font-size: 1.1rem !important;
+    padding: 0;
+    font-size: clamp(18px, 5vw, 21px) !important;
+    line-height: 1.2 !important;
   }
 
   .contact-value {
-    display: none;
+    display: block;
+    grid-column: 2;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
   }
 
   .contact-item {
-    padding: var(--space-s) 0;
+    display: block;
+    padding: 0;
+    border-bottom: 1px solid rgba(241, 241, 240, 0.16);
+  }
+
+  .link {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 3px 12px;
+    width: 100%;
+    min-height: 70px;
+    padding: 12px 0;
+  }
+
+  .link > svg {
+    grid-row: 1 / 3;
+    align-self: center;
+    font-size: 25px;
+  }
+
+  .contact-arrow {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    align-self: center;
+    font-size: 18px;
   }
 
   /* Подпись внизу справа на мобильных */
   .bottom-signature {
-    right: var(--space-s);
+    right: 20px;
+    bottom: 16px;
+    max-width: calc(100% - 40px);
   }
+
+  .bottom-signature > span {
+    font-size: 12px !important;
+  }
+
 }
 
 /* Лоадер */
@@ -296,5 +351,18 @@ onUnmounted(() => {
   font-size: 1.2rem;
   font-weight: 300;
   opacity: 0.5;
+}
+
+@media (max-width: 759px) {
+  .contacts-loading {
+    min-height: 100svh;
+    padding: 80px 20px 40px;
+  }
+
+  .loading-text {
+    font-size: 16px;
+    line-height: 1.4;
+    text-align: center;
+  }
 }
 </style>

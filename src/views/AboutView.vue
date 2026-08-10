@@ -156,13 +156,27 @@ onUnmounted(() => {
 }
 
 @media (max-width: 759px) {
+  .about-section {
+    min-height: 100svh;
+    gap: 24px;
+    padding: 16px 20px 48px;
+  }
+
   .about-grid-header {
     grid-template-columns: 1fr;
-    gap: var(--space-s);
+    gap: 8px;
+    padding-right: 56px;
   }
-  .about-main-title, .about-sec-title {
-    font-size: 1.25rem;
+
+  .about-main-title,
+  .about-sec-title {
+    font-size: clamp(18px, 5.2vw, 22px);
   }
+
+  .about-content {
+    margin-top: 12px;
+  }
+
 }
 
 /* Контентная область */
@@ -212,6 +226,12 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 759px) {
+  .portrait-img {
+    display: none;
+  }
+}
+
 /* Стилизация лоадера загрузки */
 .about-loading {
   display: flex;
@@ -225,6 +245,19 @@ onUnmounted(() => {
   font-size: 1.2rem;
   font-weight: 300;
   opacity: 0.5;
+}
+
+@media (max-width: 759px) {
+  .about-loading {
+    min-height: 60svh;
+    padding: 24px 0;
+  }
+
+  .loading-text {
+    font-size: 16px;
+    line-height: 1.4;
+    text-align: center;
+  }
 }
 </style>
 

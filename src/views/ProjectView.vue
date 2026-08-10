@@ -50,7 +50,7 @@
           <div class="project-details-split">
             <!-- Вертикальный слайдер миниатюр со стрелками -->
             <div class="gallery-slider-wrapper" v-if="galleryItems.length > 0">
-              <button class="slider-arrow up" @click="scrollSlider('up')" :disabled="activeImgIndex === 0">▲</button>
+              <button type="button" class="slider-arrow up" aria-label="Предыдущее медиа" @click="scrollSlider('up')" :disabled="activeImgIndex === 0">▲</button>
 
               <div class="thumbnails-container">
                 <button
@@ -68,7 +68,7 @@
                 </button>
               </div>
 
-              <button class="slider-arrow down" @click="scrollSlider('down')" :disabled="activeImgIndex === galleryItems.length - 1">▼</button>
+              <button type="button" class="slider-arrow down" aria-label="Следующее медиа" @click="scrollSlider('down')" :disabled="activeImgIndex === galleryItems.length - 1">▼</button>
             </div>
 
             <!-- Текст описания и кнопка действия -->
@@ -175,11 +175,15 @@ const setActiveImage = (idx) => {
     const activeThumb = document.querySelector('.thumb-item.active')
     const container = document.querySelector('.thumbnails-container')
     if (activeThumb && container) {
-      const targetScroll = activeThumb.offsetTop - container.offsetTop - (container.clientHeight / 2) + (activeThumb.clientHeight / 2)
-      container.scrollTo({
-        top: targetScroll,
-        behavior: 'smooth'
-      })
+      const mobileLayout = window.matchMedia('(max-width: 759px)').matches
+
+      if (mobileLayout) {
+        const targetScroll = activeThumb.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (activeThumb.clientWidth / 2)
+        container.scrollTo({ left: targetScroll, behavior: 'smooth' })
+      } else {
+        const targetScroll = activeThumb.offsetTop - container.offsetTop - (container.clientHeight / 2) + (activeThumb.clientHeight / 2)
+        container.scrollTo({ top: targetScroll, behavior: 'smooth' })
+      }
     }
   })
 }
@@ -241,12 +245,21 @@ onUnmounted(() => {
 }
 
 @media (max-width: 759px) {
+  .project-section {
+    min-height: 100svh;
+    gap: 28px;
+    padding: 16px 20px 48px;
+  }
+
   .project-grid-header {
     grid-template-columns: 1fr;
-    gap: var(--space-s);
+    gap: 8px;
+    padding-right: 56px;
   }
-  .project-main-title, .project-sec-title {
-    font-size: 1.25rem;
+
+  .project-main-title,
+  .project-sec-title {
+    font-size: clamp(18px, 5.2vw, 22px);
   }
 }
 
@@ -485,6 +498,98 @@ onUnmounted(() => {
   font-weight: 300;
   opacity: 0.5;
 }
+
+@media (max-width: 759px) {
+  .project-content {
+    gap: 24px;
+  }
+
+  .project-main-image-col {
+    aspect-ratio: 4 / 3;
+  }
+
+  .project-title-header {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-bottom: 22px;
+    font-size: clamp(26px, 8vw, 34px) !important;
+    line-height: 1.06;
+    overflow-wrap: anywhere;
+  }
+
+  .project-year {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .project-order-top {
+    margin-bottom: 24px;
+  }
+
+  .project-details-split {
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  .gallery-slider-wrapper {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .slider-arrow {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    place-items: center;
+    font-size: 14px;
+  }
+
+  .slider-arrow.up,
+  .slider-arrow.down {
+    transform: rotate(-90deg);
+  }
+
+  .thumbnails-container {
+    flex-direction: row;
+    gap: 8px;
+    min-width: 0;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+  }
+
+  .thumb-item {
+    width: auto;
+    flex: 0 0 clamp(76px, 24vw, 104px);
+    scroll-snap-align: center;
+  }
+
+  .project-description-block {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .about-label {
+    margin-bottom: 14px;
+    font-size: 18px !important;
+  }
+
+  .project-loading {
+    min-height: 100svh;
+    padding: 80px 20px 40px;
+  }
+
+  .loading-text {
+    font-size: 16px;
+    line-height: 1.4;
+    text-align: center;
+  }
+}
 </style>
 
 <style>
@@ -519,6 +624,20 @@ onUnmounted(() => {
 @media (min-width: 1024px) {
   .project-html-content p {
     font-size: clamp(16px, 0.86vw, 32px) !important;
+  }
+}
+
+@media (max-width: 759px) {
+  .project-html-content p,
+  .project-html-content li {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+  }
+
+  .project-html-content ul,
+  .project-html-content ol {
+    margin: 0 0 18px;
+    padding-left: 20px;
   }
 }
 </style>

@@ -5,8 +5,11 @@
         class="link m-vertical toggle"
         role="button"
         tabindex="0"
+        :aria-expanded="isMenuOpen"
+        :aria-label="isMenuOpen ? 'Закрыть меню' : 'Открыть меню'"
         @click="toggleMenu"
         @keydown.enter="toggleMenu"
+        @keydown.space.prevent="toggleMenu"
     >
       <span>Меню</span>
     </div>
@@ -52,10 +55,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 import BrandLink from './BrandLink.vue'
 
 const isMenuOpen = ref(false)
+let previousOverflow = ''
+let bodyScrollLocked = false
 
 const menuAbout = ref("Обо мне")
 const menuProjects = ref("Проекты")
@@ -101,11 +106,23 @@ const toggleMenu = () => {
 // Эффект расшифровки пунктов меню при его открытии (на русском языке)
 watch(isMenuOpen, (isOpen) => {
   if (isOpen) {
+    if (window.matchMedia('(max-width: 759px)').matches) {
+      previousOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      bodyScrollLocked = true
+    }
     runScramble("Обо мне", menuAbout, 100)
     runScramble("Проекты", menuProjects, 220)
     runScramble("Услуги", menuGallery, 340)
     runScramble("Контакты", menuContacts, 460)
+  } else if (bodyScrollLocked) {
+    document.body.style.overflow = previousOverflow
+    bodyScrollLocked = false
   }
+})
+
+onUnmounted(() => {
+  if (bodyScrollLocked) document.body.style.overflow = previousOverflow
 })
 </script>
 
@@ -248,30 +265,72 @@ watch(isMenuOpen, (isOpen) => {
 }
 
 @media (max-width: 759px) {
-  /*
-    На мобильных сохраняется оригинальная grid-сетка оверлея.
-  */
-  .overlay-logo {
-    align-self: start;
+  .toggle {
+    top: 16px;
+    right: 16px;
   }
 
-  /*
-    На мобильных список во 2-й колонке выстроен по горизонтали (в ряд).
-    align-self: start i align-items: flex-start прижимают элементы
-    ровно к верхнему краю сетки, на один уровень с логотипом.
-  */
-  .overlay-list {
-    grid-column: 2 / 4;
+  .overlay {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 28px 16px;
+    padding: 16px 20px 22px;
+  }
+
+  .overlay-logo {
+    grid-column: 1;
+    grid-row: 1;
     align-self: start;
+    min-width: 0;
+    padding-right: 44px;
+  }
+
+  .overlay-brand {
+    font-size: clamp(17px, 5vw, 21px);
+  }
+
+  .overlay-empty {
+    display: none;
+  }
+
+  .overlay-list {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: center;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
-    gap: clamp(18px, 6vw, 36px);
-    align-items: flex-start;
+    gap: 0;
+    width: 100%;
   }
 
   .overlay-list li {
-    min-width: 1em;
+    min-width: 0;
+    border-bottom: 1px solid rgba(241, 241, 240, 0.16);
+  }
+
+  .overlay-list li:first-child {
+    border-top: 1px solid rgba(241, 241, 240, 0.16);
+  }
+
+  .overlay-list .m-vertical {
+    display: block;
+    padding: 12px 0 10px;
+    font-size: clamp(34px, 11vw, 48px);
+    line-height: 0.95;
+    text-align: left;
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  .copy {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: end;
+    font-size: 14px;
+    writing-mode: horizontal-tb;
+    transform: none;
   }
 }
 </style>

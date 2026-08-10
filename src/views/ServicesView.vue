@@ -514,8 +514,15 @@ onUnmounted(() => {
 }
 
 @media (max-width: 560px) {
+  .services-section {
+    min-height: 100svh;
+    padding: 16px 20px 48px;
+  }
+
   .services-grid-header {
-    padding-bottom: 74px;
+    gap: 8px;
+    padding-right: 56px;
+    padding-bottom: 64px;
   }
 
   .services-main-title,
@@ -525,6 +532,7 @@ onUnmounted(() => {
 
   .services-hero {
     gap: 28px;
+    padding-top: 28px;
     padding-bottom: 84px;
   }
 
@@ -538,11 +546,25 @@ onUnmounted(() => {
   }
 
   .services-list-heading {
+    gap: 14px;
     padding: 20px 0;
+    font-size: 13px;
   }
 
   .service-card {
     padding: 22px 18px;
+  }
+
+  .service-card-header,
+  .service-footer {
+    gap: 12px;
+  }
+
+  .service-number,
+  .service-duration,
+  .service-includes-label,
+  .service-footer > span {
+    font-size: 12px;
   }
 
   .service-copy {
@@ -551,6 +573,11 @@ onUnmounted(() => {
 
   .service-copy h2 {
     font-size: clamp(34px, 10.5vw, 46px);
+  }
+
+  .service-description,
+  .service-includes p {
+    font-size: 16px;
   }
 
   .service-includes {
@@ -562,6 +589,12 @@ onUnmounted(() => {
     align-items: flex-end;
   }
 
+  .service-footer strong {
+    max-width: 58%;
+    font-size: clamp(22px, 7vw, 30px);
+    overflow-wrap: anywhere;
+  }
+
   .services-cta {
     gap: 26px 14px;
     margin-top: 90px;
@@ -570,6 +603,10 @@ onUnmounted(() => {
   .services-cta-title,
   .services-cta-arrow {
     font-size: clamp(40px, 11vw, 52px);
+  }
+
+  .services-cta-title {
+    overflow-wrap: anywhere;
   }
 }
 </style>

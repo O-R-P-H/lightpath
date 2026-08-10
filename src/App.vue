@@ -68,4 +68,10 @@ a:focus-visible {
     cursor: none !important;
   }
 }
+
+@media (max-width: 759px) {
+  body {
+    background-attachment: scroll;
+  }
+}
 </style>

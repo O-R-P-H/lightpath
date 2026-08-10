@@ -231,8 +231,56 @@ onUnmounted(closeModal)
 }
 
 @media (max-width: 560px) {
+  .order-trigger {
+    min-height: 44px;
+    padding: 11px 16px;
+    font-size: 15px;
+  }
+
+  .contact-modal {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .contact-modal__panel {
+    width: 100%;
+    max-height: calc(100svh - 24px);
+    padding: 20px;
+    overflow-y: auto;
+    border-radius: 18px 18px 6px 6px;
+    overscroll-behavior: contain;
+  }
+
+  .contact-modal__header {
+    gap: 16px;
+  }
+
+  .contact-modal__header h2 {
+    font-size: clamp(30px, 9vw, 38px);
+  }
+
+  .contact-modal__close {
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+  }
+
+  .contact-modal__lead,
+  .contact-modal__note,
+  .contact-modal__empty {
+    margin: 18px 0;
+    font-size: 15px;
+  }
+
+  .contact-modal__links {
+    margin-top: 20px;
+  }
+
   .contact-modal__links a {
     grid-template-columns: auto 1fr auto;
+    min-height: 56px;
+    padding: 12px 0;
+    font-size: 16px;
   }
 
   .contact-modal__value {
