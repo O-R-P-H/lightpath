@@ -60,8 +60,8 @@
       <div class="scene-frame" :style="{ backgroundColor: placeholderColor }">
         <Transition name="scene-fade">
           <img
-            v-if="displayedScene?.image"
-            :key="displayedScene.id"
+            v-if="displayedImageUrl"
+            :key="displayedImageUrl"
             class="scene-image"
             :src="displayedImageUrl"
             :alt="`${currentSceneLabel} — ${selectedTemperature}`"
@@ -69,7 +69,7 @@
           <div v-else key="placeholder" class="solid-placeholder" aria-hidden="true"></div>
         </Transition>
         <span class="visually-hidden" aria-live="polite">
-          {{ currentScene?.image ? `${currentSceneLabel}, ${selectedTemperature}` : 'Изображение для выбранной комбинации пока не добавлено' }}
+          {{ currentImageUrl ? `${currentSceneLabel}, ${selectedTemperature}` : 'Изображение для выбранной комбинации пока не добавлено' }}
         </span>
       </div>
     </main>
@@ -83,7 +83,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import Header from '../components/Header.vue'
-import { DIRECTUS_URL, assetUrl, preloadImage } from '../utils/directus.js'
+import { DIRECTUS_URL, preloadImage } from '../utils/directus.js'
 import { scrambleElementText } from '../utils/textScramble.js'
 
 const DEFAULT_TITLE = 'Студия светового дизайна\nМацнева Николая'
@@ -91,6 +91,14 @@ const DEFAULT_FIXTURES = ['Болларды', 'Ступени', 'Забор', '�
 const DEFAULT_TEMPERATURES = ['Дневной белый', 'Нейтральный белый', 'Теплый белый', 'Янтарный']
 const DEFAULT_PLACEHOLDER_COLOR = '#171821'
 const GLYPHS = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-'
+const HOME_IMAGES = {
+  '': '/images/home/00-light-off.webp',
+  'Забор': '/images/home/01-fence.webp',
+  'Забор|Фасадные': '/images/home/02-fence-facade.webp',
+  'Болларды|Забор|Фасадные': '/images/home/03-fence-facade-bollards.webp',
+  'Болларды|Забор': '/images/home/04-fence-bollards.webp',
+  'Линейные': '/images/home/05-linear.webp',
+}
 
 const [targetTitleLine1, targetTitleLine2] = DEFAULT_TITLE.split('\n')
 const titleLine1 = ref('')
@@ -98,8 +106,6 @@ const titleLine2 = ref('')
 const fixtureOptions = ref(DEFAULT_FIXTURES)
 const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
-const scenes = ref([])
-const displayedScene = ref(null)
 const displayedImageUrl = ref('')
 const serviceItems = ref([])
 const serviceListRef = ref(null)
@@ -109,7 +115,7 @@ const abortController = new AbortController()
 const scrambleTimeouts = []
 const scrambleIntervals = []
 const animationCleanups = []
-let sceneLoadRequest = 0
+let imageLoadRequest = 0
 
 const runScramble = (targetText, reactiveRef, delay = 0) => {
   const timeout = window.setTimeout(() => {
@@ -152,41 +158,29 @@ const currentSceneLabel = computed(() => (
   selectedFixtures.value.length ? selectedFixtures.value.join(', ') : 'Свет выключен'
 ))
 
-const currentScene = computed(() => (
-  scenes.value.find((scene) => (
-    fixtureGroupKey(scene.fixture) === selectedFixtureKey.value
-    && scene.temperature === selectedTemperature.value
-    && scene.image
-  )) || null
+const currentImageUrl = computed(() => (
+  selectedTemperature.value === DEFAULT_TEMPERATURES[0]
+    ? HOME_IMAGES[selectedFixtureKey.value] || ''
+    : ''
 ))
 
-const sceneImageUrl = (scene) => assetUrl(scene?.image, {
-  width: 2400,
-  height: 1600,
-  fit: 'cover',
-  quality: 90,
-  format: 'webp',
-})
-
-const displaySceneWhenReady = async (scene) => {
-  const requestId = ++sceneLoadRequest
-  if (!scene?.image) {
-    displayedScene.value = null
+const displayImageWhenReady = async (url) => {
+  const requestId = ++imageLoadRequest
+  if (!url) {
     displayedImageUrl.value = ''
     return
   }
 
   try {
-    const loadedUrl = await preloadImage(sceneImageUrl(scene), assetUrl(scene.image))
-    if (requestId !== sceneLoadRequest) return
-    displayedScene.value = scene
+    const loadedUrl = await preloadImage(url)
+    if (requestId !== imageLoadRequest) return
     displayedImageUrl.value = loadedUrl
   } catch (error) {
-    if (requestId === sceneLoadRequest) console.error('Не удалось загрузить световую сцену:', error)
+    if (requestId === imageLoadRequest) console.error('Не удалось загрузить изображение главной:', error)
   }
 }
 
-watch(currentScene, displaySceneWhenReady)
+watch(currentImageUrl, displayImageWhenReady)
 
 const parseOptions = (value, fallback) => {
   const options = String(value || '')
@@ -215,8 +209,7 @@ const selectTemperature = (temperature) => {
 
 const loadHomepage = async () => {
   const query = new URLSearchParams({
-    fields: 'fixture_filters,temperature_filters,placeholder_color,scenes.id,scenes.sort,scenes.fixture_filter,scenes.temperature_filter,scenes.image',
-    'deep[scenes][_sort]': 'sort',
+    fields: 'fixture_filters,temperature_filters,placeholder_color',
     _: String(Date.now()),
   })
 
@@ -235,18 +228,10 @@ const loadHomepage = async () => {
     placeholderColor.value = parseColor(data.placeholder_color)
     selectedFixtures.value = []
     selectedTemperature.value = temperatureOptions.value[0]
-    scenes.value = Array.isArray(data.scenes)
-      ? data.scenes.map((scene) => ({
-        id: scene.id,
-        fixture: String(scene.fixture_filter || '').trim(),
-        temperature: String(scene.temperature_filter || '').trim(),
-        image: scene.image || '',
-      }))
-      : []
 
-    await displaySceneWhenReady(currentScene.value)
+    await displayImageWhenReady(currentImageUrl.value)
     window.setTimeout(() => {
-      scenes.value.forEach((scene) => preloadImage(sceneImageUrl(scene), assetUrl(scene.image)).catch(() => {}))
+      Object.values(HOME_IMAGES).forEach((url) => preloadImage(url).catch(() => {}))
     }, 250)
   } catch (error) {
     if (error.name !== 'AbortError') {
