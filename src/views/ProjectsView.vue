@@ -42,12 +42,12 @@
                 ПРАВКА КЛИЕНТА: Клик на Название теперь ведет
                 в год проекта (/projects/year/:year), а не в сам проект!
               -->
-              <router-link :to="`/projects/year/${project.year}`" class="project-title-link">
+              <router-link :to="projectRoute(project)" class="project-title-link">
                 <span>{{ project.title }}</span>
               </router-link>
 
               <!-- Клик на Год также ведет на страницу проектов этого года -->
-              <router-link :to="`/projects/year/${project.year}`" class="project-year-link">
+              <router-link v-if="project.year" :to="`/projects/year/${project.year}`" class="project-year-link">
                 <span>{{ project.year }}</span>
               </router-link>
             </li>
@@ -134,9 +134,16 @@ const fetchProjects = async () => {
 // Фильтруем проекты, которые должны быть в меню (is_in_menu === true)
 const primaryProjects = computed(() => {
   return allProjects.value
-      .filter(p => p.is_in_menu && p.year)
-      .sort((a, b) => parseInt(b.year) - parseInt(a.year))
+      .filter(p => p.is_in_menu)
+      .sort((a, b) => {
+        const yearDifference = (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0)
+        return yearDifference || String(a.title || '').localeCompare(String(b.title || ''), 'ru')
+      })
 })
+
+const projectRoute = (project) => (
+  project.year ? `/projects/year/${project.year}` : `/projects/${project.id}`
+)
 
 // Наведение мыши: меняем картинку и плавно перемещаем контейнер по вертикали
 const handleMouseEnter = (project, event) => {

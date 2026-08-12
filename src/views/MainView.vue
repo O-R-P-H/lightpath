@@ -11,7 +11,7 @@
         </h1>
       </router-link>
 
-      <nav class="hero-list" aria-label="Услуги">
+      <nav ref="serviceListRef" class="hero-list" aria-label="Услуги">
         <router-link
           v-for="(service, index) in serviceItems"
           :key="`${service.title}-${index}`"
@@ -82,9 +82,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import Header from '../components/Header.vue'
 import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus.js'
+import { scrambleElementText } from '../utils/textScramble.js'
 
 const DEFAULT_TITLE = 'Студия светового дизайна\nМацнева Николая'
 const DEFAULT_FIXTURES = ['Болларды', 'Ступени', 'Забор', 'Деревья/кусты', 'Фасадные', 'Линейные']
@@ -100,11 +101,13 @@ const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
 const scenes = ref([])
 const serviceItems = ref([])
+const serviceListRef = ref(null)
 const selectedFixtures = ref([])
 const selectedTemperature = ref(DEFAULT_TEMPERATURES[0])
 const abortController = new AbortController()
 const scrambleTimeouts = []
 const scrambleIntervals = []
+const animationCleanups = []
 
 const runScramble = (targetText, reactiveRef, delay = 0) => {
   const timeout = window.setTimeout(() => {
@@ -242,6 +245,16 @@ const loadServices = async () => {
         })
         .filter((service) => service.title)
       : []
+
+    await nextTick()
+    const serviceLinks = serviceListRef.value?.querySelectorAll('a') || []
+    serviceLinks.forEach((element, index) => {
+      animationCleanups.push(scrambleElementText(element, {
+        delay: 620 + index * 105,
+        duration: 720,
+        frameDuration: 45,
+      }))
+    })
   } catch (error) {
     if (error.name !== 'AbortError') console.error('Не удалось загрузить список услуг из Directus:', error)
   }
@@ -259,6 +272,7 @@ onUnmounted(() => {
   abortController.abort()
   scrambleTimeouts.forEach((timeout) => window.clearTimeout(timeout))
   scrambleIntervals.forEach((interval) => window.clearInterval(interval))
+  animationCleanups.forEach((cleanup) => cleanup())
   document.documentElement.classList.remove('reference-root-active')
 })
 </script>

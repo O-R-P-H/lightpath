@@ -40,7 +40,7 @@
         <!-- Правая колонка: Заголовок, описание, слайдер и кнопка заказа -->
         <div class="project-details-col">
           <h1 class="project-title-header">
-            {{ project.title }} <span class="project-year">{{ project.year }}</span>
+            {{ project.title }} <span v-if="project.year" class="project-year">{{ project.year }}</span>
           </h1>
 
           <div class="project-order-top">
