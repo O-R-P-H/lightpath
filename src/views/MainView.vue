@@ -11,11 +11,15 @@
         </h1>
       </router-link>
 
-      <ul class="hero-list" aria-label="Направления студии">
-        <li v-for="(tag, index) in scrambledTags" :key="index">
-          {{ tag }}
-        </li>
-      </ul>
+      <nav class="hero-list" aria-label="Услуги">
+        <router-link
+          v-for="(service, index) in serviceItems"
+          :key="`${service.title}-${index}`"
+          :to="{ path: '/gallery', hash: `#service-${String(index + 1).padStart(2, '0')}` }"
+        >
+          {{ service.navigationTitle }}
+        </router-link>
+      </nav>
     </header>
 
     <main class="scene-explorer" aria-label="Подбор светового решения">
@@ -26,10 +30,10 @@
             v-for="option in fixtureOptions"
             :key="option"
             class="filter-button"
-            :class="{ active: option === selectedFixture }"
+            :class="{ active: selectedFixtures.includes(option) }"
             type="button"
-            :aria-pressed="option === selectedFixture"
-            @click="selectFixture(option)"
+            :aria-pressed="selectedFixtures.includes(option)"
+            @click="toggleFixture(option)"
           >
             {{ option }}
           </button>
@@ -60,13 +64,13 @@
             :key="currentScene.id"
             class="scene-image"
             :src="currentImageUrl"
-            :alt="`${selectedFixture} — ${selectedTemperature}`"
+            :alt="`${currentSceneLabel} — ${selectedTemperature}`"
             @error="fallbackToOriginalAsset($event, currentScene.image)"
           />
           <div v-else key="placeholder" class="solid-placeholder" aria-hidden="true"></div>
         </Transition>
         <span class="visually-hidden" aria-live="polite">
-          {{ currentScene?.image ? `${selectedFixture}, ${selectedTemperature}` : 'Однотонная заглушка' }}
+          {{ currentScene?.image ? `${currentSceneLabel}, ${selectedTemperature}` : 'Изображение для выбранной комбинации пока не добавлено' }}
         </span>
       </div>
     </main>
@@ -86,21 +90,17 @@ const DEFAULT_TITLE = 'Студия светового дизайна\nМацн�
 const DEFAULT_FIXTURES = ['Болларды', 'Ступени', 'Забор', 'Деревья/кусты', 'Фасадные', 'Линейные']
 const DEFAULT_TEMPERATURES = ['Дневной белый', 'Нейтральный белый', 'Теплый белый', 'Янтарный']
 const DEFAULT_PLACEHOLDER_COLOR = '#171821'
-const TARGET_TAGS = [
-  'Светодизайн', 'Архитектура', 'Атмосфера', 'Концепт',
-  'Инженерия', 'Искусство', 'Пространство', 'Влияние',
-]
 const GLYPHS = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-'
 
 const [targetTitleLine1, targetTitleLine2] = DEFAULT_TITLE.split('\n')
 const titleLine1 = ref('')
 const titleLine2 = ref('')
-const scrambledTags = ref(TARGET_TAGS.map(() => ''))
 const fixtureOptions = ref(DEFAULT_FIXTURES)
 const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
 const scenes = ref([])
-const selectedFixture = ref(DEFAULT_FIXTURES[0])
+const serviceItems = ref([])
+const selectedFixtures = ref([])
 const selectedTemperature = ref(DEFAULT_TEMPERATURES[0])
 const abortController = new AbortController()
 const scrambleTimeouts = []
@@ -133,9 +133,23 @@ const runScramble = (targetText, reactiveRef, delay = 0) => {
   scrambleTimeouts.push(timeout)
 }
 
+const fixtureGroupKey = (value) => {
+  const fixtures = new Set(String(value || '')
+    .split(/\s*\+\s*/)
+    .map((fixture) => fixture.trim())
+    .filter((fixture) => fixture && fixture !== 'Свет выключен'))
+
+  return fixtureOptions.value.filter((fixture) => fixtures.has(fixture)).join('|')
+}
+
+const selectedFixtureKey = computed(() => fixtureGroupKey(selectedFixtures.value.join(' + ')))
+const currentSceneLabel = computed(() => (
+  selectedFixtures.value.length ? selectedFixtures.value.join(', ') : 'Свет выключен'
+))
+
 const currentScene = computed(() => (
   scenes.value.find((scene) => (
-    scene.fixture === selectedFixture.value
+    fixtureGroupKey(scene.fixture) === selectedFixtureKey.value
     && scene.temperature === selectedTemperature.value
     && scene.image
   )) || null
@@ -163,8 +177,11 @@ const parseColor = (value) => {
   return /^#[\da-f]{3,8}$/i.test(color) ? color : DEFAULT_PLACEHOLDER_COLOR
 }
 
-const selectFixture = (fixture) => {
-  selectedFixture.value = fixture
+const toggleFixture = (fixture) => {
+  const selected = new Set(selectedFixtures.value)
+  if (selected.has(fixture)) selected.delete(fixture)
+  else selected.add(fixture)
+  selectedFixtures.value = fixtureOptions.value.filter((option) => selected.has(option))
 }
 
 const selectTemperature = (temperature) => {
@@ -191,7 +208,7 @@ const loadHomepage = async () => {
     fixtureOptions.value = parseOptions(data.fixture_filters, DEFAULT_FIXTURES)
     temperatureOptions.value = parseOptions(data.temperature_filters, DEFAULT_TEMPERATURES)
     placeholderColor.value = parseColor(data.placeholder_color)
-    selectedFixture.value = fixtureOptions.value[0]
+    selectedFixtures.value = []
     selectedTemperature.value = temperatureOptions.value[0]
     scenes.value = Array.isArray(data.scenes)
       ? data.scenes.map((scene) => ({
@@ -208,19 +225,34 @@ const loadHomepage = async () => {
   }
 }
 
+const loadServices = async () => {
+  try {
+    const response = await fetch(`${DIRECTUS_URL}/items/services?fields=service_items`, {
+      cache: 'no-store',
+      signal: abortController.signal,
+    })
+    if (!response.ok) throw new Error(`Directus responded with ${response.status}`)
+
+    const { data } = await response.json()
+    serviceItems.value = Array.isArray(data?.service_items)
+      ? data.service_items
+        .map((service) => {
+          const title = String(service?.title || '').trim()
+          return { title, navigationTitle: title === 'Аудит световой среды' ? 'Аудит' : title }
+        })
+        .filter((service) => service.title)
+      : []
+  } catch (error) {
+    if (error.name !== 'AbortError') console.error('Не удалось загрузить список услуг из Directus:', error)
+  }
+}
+
 onMounted(() => {
   document.documentElement.classList.add('reference-root-active')
   loadHomepage()
+  loadServices()
   runScramble(targetTitleLine1, titleLine1, 150)
   runScramble(targetTitleLine2, titleLine2, 450)
-
-  TARGET_TAGS.forEach((tag, index) => {
-    const reactiveWrapper = {
-      get value() { return scrambledTags.value[index] },
-      set value(value) { scrambledTags.value[index] = value },
-    }
-    runScramble(tag, reactiveWrapper, 750 + index * 120)
-  })
 })
 
 onUnmounted(() => {
@@ -280,12 +312,19 @@ onUnmounted(() => {
 }
 
 .hero-list {
-  list-style: none;
+  display: grid;
+  align-content: start;
 }
 
-.hero-list li {
-  min-height: 1em;
-  margin-bottom: .18rem;
+.hero-list a {
+  width: fit-content;
+  max-width: 100%;
+  color: inherit;
+  font-size: clamp(18px, 1.8vw, 58px);
+  line-height: 1.02;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: opacity .25s ease;
 }
 
 .scene-explorer {
@@ -411,6 +450,10 @@ onUnmounted(() => {
 }
 
 @media (hover: hover) {
+  .hero-list a:hover {
+    opacity: .56;
+  }
+
   .link:hover > span {
     transform: rotateX(180deg);
   }
@@ -448,7 +491,15 @@ onUnmounted(() => {
   }
 
   .hero-list {
-    display: none;
+    display: grid;
+    gap: 5px;
+    margin-top: clamp(26px, 5vh, 44px);
+    font-size: initial;
+  }
+
+  .hero-list a {
+    font-size: clamp(17px, 5vw, 24px);
+    line-height: 1.03;
   }
 
   .scene-explorer {
@@ -458,7 +509,7 @@ onUnmounted(() => {
     gap: clamp(14px, 2.2vh, 20px);
     align-content: center;
     min-height: 0;
-    padding: clamp(28px, 6vh, 56px) 20px;
+    padding: clamp(28px, 6vh, 56px) max(20px, env(safe-area-inset-right)) clamp(28px, 6vh, 56px) max(20px, env(safe-area-inset-left));
   }
 
   .scene-frame {

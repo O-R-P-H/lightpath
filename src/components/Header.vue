@@ -192,8 +192,8 @@ onUnmounted(() => {
 
 .toggle {
   position: fixed;
-  right: var(--space-s);
-  top: var(--space-s);
+  right: max(var(--space-s), env(safe-area-inset-right));
+  top: max(var(--space-s), env(safe-area-inset-top));
   z-index: 10; /* Находится поверх оверлея */
 }
 
@@ -205,7 +205,11 @@ onUnmounted(() => {
     rgba(7, 8, 18, 0.96);
   backdrop-filter: blur(18px);
   gap: var(--space-m);
-  padding: var(--space-s);
+  padding:
+    max(var(--space-s), env(safe-area-inset-top))
+    max(var(--space-s), env(safe-area-inset-right))
+    max(var(--space-s), env(safe-area-inset-bottom))
+    max(var(--space-s), env(safe-area-inset-left));
 
   /* Плавный переход видимости */
   visibility: hidden;
@@ -266,15 +270,19 @@ onUnmounted(() => {
 
 @media (max-width: 759px) {
   .toggle {
-    top: 16px;
-    right: 16px;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
   }
 
   .overlay {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 28px 16px;
-    padding: 16px 20px 22px;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(20px, env(safe-area-inset-right))
+      max(22px, env(safe-area-inset-bottom))
+      max(20px, env(safe-area-inset-left));
   }
 
   .overlay-logo {

@@ -10,33 +10,22 @@
         </div>
 
         <div v-if="!loading && !error" class="services-content">
-          <header class="services-hero" :class="{ 'services-hero--with-visual': photoUrl }">
-            <div class="services-hero-aside">
-              <span class="services-eyebrow">Полный цикл</span>
-              <p>Концепция<br>Расчёт<br>Реализация</p>
-            </div>
-
-            <div class="services-hero-copy">
-              <h1>Световой дизайн для архитектуры и ландшафта</h1>
-              <div class="services-intro" v-html="sanitizedIntro"></div>
-            </div>
-
-            <figure v-if="photoUrl" class="services-visual">
-              <img :src="photoUrl" alt="Световой дизайн" />
-            </figure>
-          </header>
-
-          <div class="services-list-heading">
-            <span>Направления работы</span>
-            <span>{{ serviceItems.length }} {{ serviceCountLabel }}</span>
-          </div>
-
           <ol v-if="serviceItems.length" class="services-list">
-            <li v-for="(service, index) in serviceItems" :key="`${service.title}-${index}`" class="service-item">
-              <article class="service-card">
+            <li
+              v-for="(service, index) in serviceItems"
+              :id="`service-${String(index + 1).padStart(2, '0')}`"
+              :key="`${service.title}-${index}`"
+              class="service-item"
+            >
+              <article
+                class="service-card"
+                :class="{ 'service-card--compact': !service.description && !service.includes && !service.duration }"
+              >
                 <header class="service-card-header">
                   <span class="service-number">{{ String(index + 1).padStart(2, '0') }}</span>
-                  <span v-if="service.duration" class="service-duration">до результата · {{ service.duration }}</span>
+                  <span v-if="service.duration" class="service-duration">
+                    Срок предоставления услуги · {{ service.duration }}
+                  </span>
                 </header>
 
                 <div class="service-copy">
@@ -50,9 +39,8 @@
                 </div>
 
                 <footer class="service-footer">
-                  <span>Стоимость проекта</span>
-                  <strong v-if="service.price">{{ service.price }}</strong>
-                  <strong v-else>По запросу</strong>
+                  <span>Стоимость</span>
+                  <p>{{ service.price || 'По запросу' }}</p>
                 </footer>
               </article>
             </li>
@@ -80,19 +68,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
-import { sanitizeHtml } from '../utils/sanitize'
-import { DIRECTUS_URL, assetUrl } from '../utils/directus'
+import { DIRECTUS_URL } from '../utils/directus'
 
-const intro = ref('')
 const rawServiceItems = ref([])
-const photoUrl = ref('')
 const loading = ref(true)
 const error = ref(false)
-
-const sanitizedIntro = computed(() => sanitizeHtml(intro.value))
+const route = useRoute()
 
 const cleanText = (value) => typeof value === 'string' ? value.trim() : ''
 
@@ -110,35 +95,19 @@ const serviceItems = computed(() => {
     .filter((item) => item.title)
 })
 
-const serviceCountLabel = computed(() => {
-  const count = serviceItems.value.length
-  const remainder = count % 10
-  const remainder100 = count % 100
-  if (remainder === 1 && remainder100 !== 11) return 'услуга'
-  if (remainder >= 2 && remainder <= 4 && (remainder100 < 12 || remainder100 > 14)) return 'услуги'
-  return 'услуг'
-})
-
-const resolvePhotoUrl = (photo) => {
-  if (!photo) return ''
-  if (typeof photo === 'object') return assetUrl(photo)
-
-  const path = cleanText(photo)
-  if (/^https?:\/\//i.test(path)) return path
-  if (path.includes('assets/')) return `${DIRECTUS_URL}/${path.replace(/^\//, '')}`
-  return assetUrl(path, { width: 1800, quality: 84 })
-}
-
 const fetchServicesData = async () => {
   try {
-    const fields = 'title,photo_services,service_items'
+    const fields = 'service_items'
     const response = await fetch(`${DIRECTUS_URL}/items/services?fields=${fields}`)
     if (!response.ok) throw new Error(`CMS returned ${response.status}`)
 
     const { data } = await response.json()
-    intro.value = data?.title || ''
     rawServiceItems.value = data?.service_items || []
-    photoUrl.value = resolvePhotoUrl(data?.photo_services)
+    await nextTick()
+
+    if (route.hash) {
+      document.querySelector(route.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   } catch (err) {
     console.error('Ошибка при загрузке данных об услугах из Directus:', err)
     error.value = true
@@ -167,7 +136,11 @@ onUnmounted(() => {
 
 .services-section {
   min-height: 100vh;
-  padding: clamp(8px, 0.6vw, 24px);
+  padding:
+    max(clamp(8px, 0.6vw, 24px), env(safe-area-inset-top))
+    max(clamp(8px, 0.6vw, 24px), env(safe-area-inset-right))
+    max(clamp(8px, 0.6vw, 24px), env(safe-area-inset-bottom))
+    max(clamp(8px, 0.6vw, 24px), env(safe-area-inset-left));
   border-top: 1px solid var(--color-line);
   box-sizing: border-box;
 }
@@ -181,7 +154,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr);
   gap: clamp(20px, 2vw, 72px);
-  padding-bottom: clamp(48px, 7vw, 220px);
+  padding: 0 max(70px, calc(env(safe-area-inset-right) + 56px)) clamp(48px, 7vw, 220px) 0;
 }
 
 .services-main-title,
@@ -192,104 +165,6 @@ onUnmounted(() => {
   font-weight: 400;
   line-height: 1;
   letter-spacing: -0.035em;
-}
-
-.services-hero {
-  display: grid;
-  grid-template-columns: minmax(150px, 0.62fr) minmax(0, 2.38fr);
-  gap: clamp(28px, 4vw, 120px);
-  padding: clamp(34px, 4vw, 110px) 0 clamp(56px, 7vw, 190px);
-  border-top: 1px solid var(--color-line);
-  align-items: start;
-}
-
-.services-hero--with-visual {
-  grid-template-columns: minmax(150px, 0.55fr) minmax(0, 1.35fr) minmax(300px, 1.1fr);
-}
-
-.services-hero-aside {
-  display: flex;
-  min-height: 100%;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: clamp(28px, 5vw, 110px);
-  color: rgba(241, 241, 240, 0.62);
-  font-size: clamp(14px, 0.62vw, 24px);
-  line-height: 1.42;
-  letter-spacing: -0.01em;
-}
-
-.services-hero-aside p {
-  margin: 0;
-}
-
-.services-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.services-eyebrow::before {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  content: '';
-}
-
-.services-hero-copy h1 {
-  max-width: 12ch;
-  margin: 0;
-  font-size: clamp(48px, 6.3vw, 172px);
-  font-weight: 300;
-  line-height: 0.9;
-  letter-spacing: -0.06em;
-  text-wrap: balance;
-}
-
-.services-intro {
-  max-width: 42ch;
-  margin-top: clamp(32px, 4vw, 100px);
-  color: rgba(241, 241, 240, 0.72);
-  font-size: clamp(18px, 1.25vw, 40px);
-  font-weight: 300;
-  line-height: 1.35;
-  letter-spacing: -0.018em;
-  word-spacing: 0.08em;
-}
-
-.services-intro :deep(p) {
-  margin: 0;
-}
-
-.services-visual {
-  min-height: clamp(420px, 42vw, 920px);
-  margin: 0;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.services-visual img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: saturate(0.62) contrast(1.08);
-}
-
-.services-list-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: clamp(22px, 2vw, 54px) 0;
-  border-top: 1px solid var(--color-line);
-  color: rgba(241, 241, 240, 0.6);
-  font-size: clamp(16px, 0.72vw, 26px);
-  line-height: 1.2;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .services-list {
@@ -304,6 +179,7 @@ onUnmounted(() => {
 .service-item {
   display: flex;
   min-width: 0;
+  scroll-margin-top: clamp(12px, 2vw, 48px);
 }
 
 .service-card {
@@ -320,8 +196,7 @@ onUnmounted(() => {
   transition: border-color 220ms ease, background-color 220ms ease, transform 220ms ease;
 }
 
-.service-card-header,
-.service-footer {
+.service-card-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -348,6 +223,15 @@ onUnmounted(() => {
   padding: clamp(60px, 7vw, 170px) 0 clamp(42px, 5vw, 120px);
 }
 
+.service-card--compact {
+  min-height: clamp(360px, 24vw, 560px);
+}
+
+.service-card--compact .service-copy {
+  margin: auto 0;
+  padding: clamp(44px, 5vw, 120px) 0;
+}
+
 .service-copy h2 {
   max-width: 15ch;
   margin: 0;
@@ -356,6 +240,7 @@ onUnmounted(() => {
   line-height: 0.98;
   letter-spacing: -0.05em;
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .service-description {
@@ -367,6 +252,7 @@ onUnmounted(() => {
   line-height: 1.42;
   letter-spacing: 0;
   word-spacing: 0.06em;
+  white-space: pre-line;
 }
 
 .service-includes {
@@ -386,19 +272,29 @@ onUnmounted(() => {
   line-height: 1.48;
   letter-spacing: 0;
   word-spacing: 0.08em;
+  white-space: pre-line;
 }
 
 .service-footer {
-  padding-top: clamp(22px, 2vw, 52px);
+  display: grid;
+  grid-template-columns: minmax(90px, 0.36fr) minmax(0, 1fr);
+  gap: clamp(18px, 2vw, 54px);
+  padding: clamp(24px, 2.2vw, 60px) 0 0;
   border-top: 1px solid var(--color-line);
 }
 
-.service-footer strong {
-  font-size: clamp(24px, 1.75vw, 52px);
+.service-includes + .service-footer {
+  margin-top: 0;
+}
+
+.service-footer p {
+  margin: 0;
+  color: #f1f1f0;
+  font-size: clamp(21px, 1.2vw, 38px);
   font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.035em;
-  text-align: right;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+  white-space: pre-line;
 }
 
 .services-empty {
@@ -425,7 +321,9 @@ onUnmounted(() => {
 .services-cta-kicker {
   align-self: start;
   color: rgba(241, 241, 240, 0.58);
-  font-size: clamp(14px, 0.72vw, 26px);
+  font-size: clamp(18px, 1vw, 30px);
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .services-cta-title,
@@ -434,6 +332,10 @@ onUnmounted(() => {
   font-weight: 300;
   line-height: 0.9;
   letter-spacing: -0.06em;
+}
+
+.services-cta-title {
+  overflow-wrap: anywhere;
 }
 
 .services-loading {
@@ -471,29 +373,7 @@ onUnmounted(() => {
   .services-grid-header {
     grid-template-columns: 1fr;
     gap: 8px;
-    padding-right: 56px;
-  }
-
-  .services-hero,
-  .services-hero--with-visual {
-    grid-template-columns: 1fr;
-  }
-
-  .services-hero-aside {
-    min-height: 0;
-    flex-direction: row;
-  }
-
-  .services-hero-aside p {
-    display: none;
-  }
-
-  .services-hero-copy h1 {
-    max-width: 13ch;
-  }
-
-  .services-visual {
-    min-height: min(72vw, 620px);
+    padding-right: max(70px, calc(env(safe-area-inset-right) + 60px));
   }
 
   .services-list {
@@ -505,7 +385,7 @@ onUnmounted(() => {
   }
 
   .services-cta {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .services-cta-kicker {
@@ -514,15 +394,8 @@ onUnmounted(() => {
 }
 
 @media (max-width: 560px) {
-  .services-section {
-    min-height: 100svh;
-    padding: 16px 20px 48px;
-  }
-
   .services-grid-header {
-    gap: 8px;
-    padding-right: 56px;
-    padding-bottom: 64px;
+    padding-bottom: 74px;
   }
 
   .services-main-title,
@@ -530,41 +403,8 @@ onUnmounted(() => {
     font-size: clamp(20px, 5.5vw, 24px);
   }
 
-  .services-hero {
-    gap: 28px;
-    padding-top: 28px;
-    padding-bottom: 84px;
-  }
-
-  .services-hero-copy h1 {
-    font-size: clamp(42px, 12vw, 56px);
-  }
-
-  .services-intro {
-    margin-top: 30px;
-    font-size: 18px;
-  }
-
-  .services-list-heading {
-    gap: 14px;
-    padding: 20px 0;
-    font-size: 13px;
-  }
-
   .service-card {
     padding: 22px 18px;
-  }
-
-  .service-card-header,
-  .service-footer {
-    gap: 12px;
-  }
-
-  .service-number,
-  .service-duration,
-  .service-includes-label,
-  .service-footer > span {
-    font-size: 12px;
   }
 
   .service-copy {
@@ -575,29 +415,20 @@ onUnmounted(() => {
     font-size: clamp(34px, 10.5vw, 46px);
   }
 
-  .service-description,
-  .service-includes p {
-    font-size: 16px;
-  }
-
   .service-includes {
     grid-template-columns: 1fr;
     padding: 24px 0;
   }
 
   .service-footer {
-    align-items: flex-end;
-  }
-
-  .service-footer strong {
-    max-width: 58%;
-    font-size: clamp(22px, 7vw, 30px);
-    overflow-wrap: anywhere;
+    grid-template-columns: 1fr;
+    padding-top: 24px;
   }
 
   .services-cta {
     gap: 26px 14px;
     margin-top: 90px;
+    padding-right: 4px;
   }
 
   .services-cta-title,
@@ -605,8 +436,11 @@ onUnmounted(() => {
     font-size: clamp(40px, 11vw, 52px);
   }
 
-  .services-cta-title {
-    overflow-wrap: anywhere;
+  .services-cta-kicker {
+    margin-bottom: 6px;
+    font-size: 18px;
+    line-height: 1.3;
+    white-space: normal;
   }
 }
 </style>
