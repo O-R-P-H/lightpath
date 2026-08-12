@@ -58,14 +58,13 @@
       </aside>
 
       <div class="scene-frame" :style="{ backgroundColor: placeholderColor }">
-        <Transition name="scene-fade" mode="out-in">
+        <Transition name="scene-fade">
           <img
-            v-if="currentScene?.image"
-            :key="currentScene.id"
+            v-if="displayedScene?.image"
+            :key="displayedScene.id"
             class="scene-image"
-            :src="currentImageUrl"
+            :src="displayedImageUrl"
             :alt="`${currentSceneLabel} — ${selectedTemperature}`"
-            @error="fallbackToOriginalAsset($event, currentScene.image)"
           />
           <div v-else key="placeholder" class="solid-placeholder" aria-hidden="true"></div>
         </Transition>
@@ -82,9 +81,9 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import Header from '../components/Header.vue'
-import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus.js'
+import { DIRECTUS_URL, assetUrl, preloadImage } from '../utils/directus.js'
 import { scrambleElementText } from '../utils/textScramble.js'
 
 const DEFAULT_TITLE = 'Студия светового дизайна\nМацнева Николая'
@@ -100,6 +99,8 @@ const fixtureOptions = ref(DEFAULT_FIXTURES)
 const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
 const scenes = ref([])
+const displayedScene = ref(null)
+const displayedImageUrl = ref('')
 const serviceItems = ref([])
 const serviceListRef = ref(null)
 const selectedFixtures = ref([])
@@ -108,6 +109,7 @@ const abortController = new AbortController()
 const scrambleTimeouts = []
 const scrambleIntervals = []
 const animationCleanups = []
+let sceneLoadRequest = 0
 
 const runScramble = (targetText, reactiveRef, delay = 0) => {
   const timeout = window.setTimeout(() => {
@@ -158,13 +160,33 @@ const currentScene = computed(() => (
   )) || null
 ))
 
-const currentImageUrl = computed(() => assetUrl(currentScene.value?.image, {
+const sceneImageUrl = (scene) => assetUrl(scene?.image, {
   width: 2400,
   height: 1600,
   fit: 'cover',
   quality: 90,
   format: 'webp',
-}))
+})
+
+const displaySceneWhenReady = async (scene) => {
+  const requestId = ++sceneLoadRequest
+  if (!scene?.image) {
+    displayedScene.value = null
+    displayedImageUrl.value = ''
+    return
+  }
+
+  try {
+    const loadedUrl = await preloadImage(sceneImageUrl(scene), assetUrl(scene.image))
+    if (requestId !== sceneLoadRequest) return
+    displayedScene.value = scene
+    displayedImageUrl.value = loadedUrl
+  } catch (error) {
+    if (requestId === sceneLoadRequest) console.error('Не удалось загрузить световую сцену:', error)
+  }
+}
+
+watch(currentScene, displaySceneWhenReady)
 
 const parseOptions = (value, fallback) => {
   const options = String(value || '')
@@ -221,6 +243,11 @@ const loadHomepage = async () => {
         image: scene.image || '',
       }))
       : []
+
+    await displaySceneWhenReady(currentScene.value)
+    window.setTimeout(() => {
+      scenes.value.forEach((scene) => preloadImage(sceneImageUrl(scene), assetUrl(scene.image)).catch(() => {}))
+    }, 250)
   } catch (error) {
     if (error.name !== 'AbortError') {
       console.error('Не удалось загрузить главную страницу из Directus:', error)
@@ -367,6 +394,8 @@ onUnmounted(() => {
 }
 
 .scene-image {
+  position: absolute;
+  inset: 0;
   object-fit: cover;
 }
 
@@ -456,6 +485,10 @@ onUnmounted(() => {
 .scene-fade-enter-active,
 .scene-fade-leave-active {
   transition: opacity .35s ease;
+}
+
+.scene-fade-leave-active {
+  position: absolute;
 }
 
 .scene-fade-enter-from,

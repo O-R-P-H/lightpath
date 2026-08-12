@@ -42,3 +42,33 @@ export const fallbackToOriginalAsset = (event, file) => {
   element.dataset.fallbackApplied = 'true'
   element.src = assetUrl(id)
 }
+
+const imagePreloadCache = new Map()
+
+const loadImage = (url) => new Promise((resolve, reject) => {
+  if (!url || typeof Image === 'undefined') {
+    reject(new Error('Image preload is unavailable'))
+    return
+  }
+
+  const image = new Image()
+  image.decoding = 'async'
+  image.onload = () => resolve(url)
+  image.onerror = () => reject(new Error(`Failed to preload image: ${url}`))
+  image.src = url
+})
+
+export const preloadImage = (url, fallbackUrl = '') => {
+  const cacheKey = `${url}|${fallbackUrl}`
+  if (!imagePreloadCache.has(cacheKey)) {
+    const request = loadImage(url)
+      .catch(() => (fallbackUrl && fallbackUrl !== url ? loadImage(fallbackUrl) : Promise.reject()))
+      .catch((error) => {
+        imagePreloadCache.delete(cacheKey)
+        throw error
+      })
+    imagePreloadCache.set(cacheKey, request)
+  }
+
+  return imagePreloadCache.get(cacheKey)
+}

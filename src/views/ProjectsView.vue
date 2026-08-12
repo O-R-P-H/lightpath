@@ -72,7 +72,7 @@ import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
 import ProjectOrderModal from '../components/ProjectOrderModal.vue'
-import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus'
+import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset, preloadImage } from '../utils/directus'
 import { scrambleElementText } from '../utils/textScramble'
 
 const loading = ref(true)
@@ -83,6 +83,14 @@ const hoveredRowTop = ref(0)
 const listTitleRef = ref(null)
 const projectsListRef = ref(null)
 const animationCleanups = []
+const previewUrlCache = new Map()
+let previewRequest = 0
+
+const warmProjectPreviews = async (projects) => {
+  for (const project of projects) {
+    await preloadProjectPreview(project).catch(() => {})
+  }
+}
 
 const animateProjectTitles = () => {
   if (listTitleRef.value) {
@@ -107,6 +115,7 @@ const fetchProjects = async () => {
     if (!response.ok) throw new Error(`CMS returned ${response.status}`)
     const { data } = await response.json()
     allProjects.value = data
+    window.setTimeout(() => warmProjectPreviews(primaryProjects.value), 350)
   } catch (error) {
     console.error('Ошибка получения проектов из Directus:', error)
   } finally {
@@ -157,9 +166,25 @@ const handleMouseEnter = (project, event) => {
   }
 }
 
-const setHoveredPreview = (project) => {
-  hoveredPreview.value = project.preview
-  hoveredImage.value = assetUrl(project.preview, { width: 800, quality: 82, fit: 'cover' })
+const preloadProjectPreview = async (project) => {
+  if (!project?.preview) return ''
+  if (!previewUrlCache.has(project.id)) {
+    const optimizedUrl = assetUrl(project.preview, { width: 800, quality: 82, fit: 'cover', format: 'webp' })
+    previewUrlCache.set(project.id, preloadImage(optimizedUrl, assetUrl(project.preview)))
+  }
+  return previewUrlCache.get(project.id)
+}
+
+const setHoveredPreview = async (project) => {
+  const requestId = ++previewRequest
+  try {
+    const loadedUrl = await preloadProjectPreview(project)
+    if (!loadedUrl || requestId !== previewRequest) return
+    hoveredPreview.value = project.preview
+    hoveredImage.value = loadedUrl
+  } catch (error) {
+    if (requestId === previewRequest) console.error('Не удалось загрузить превью проекта:', error)
+  }
 }
 
 onMounted(() => {

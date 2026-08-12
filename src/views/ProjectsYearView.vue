@@ -60,13 +60,21 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
-import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset } from '../utils/directus'
+import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset, preloadImage } from '../utils/directus'
 
 const route = useRoute()
 const loading = ref(true)
 const allProjects = ref([])
 const hoveredImage = ref('')
 const hoveredPreview = ref('')
+const previewUrlCache = new Map()
+let previewRequest = 0
+
+const warmProjectPreviews = async (projects) => {
+  for (const project of projects) {
+    await preloadProjectPreview(project).catch(() => {})
+  }
+}
 
 const year = computed(() => route.params.year)
 
@@ -76,6 +84,7 @@ const fetchProjects = async () => {
     if (!response.ok) throw new Error(`CMS returned ${response.status}`)
     const { data } = await response.json()
     allProjects.value = data
+    window.setTimeout(() => warmProjectPreviews(yearProjects.value), 350)
   } catch (error) {
     console.error('Ошибка получения проектов:', error)
   } finally {
@@ -93,10 +102,24 @@ const yearProjects = computed(() => {
       .sort((a, b) => a.id - b.id)
 })
 
-const handleMouseEnter = (project) => {
-  if (project.preview) {
+const preloadProjectPreview = async (project) => {
+  if (!project?.preview) return ''
+  if (!previewUrlCache.has(project.id)) {
+    const optimizedUrl = assetUrl(project.preview, { width: 900, quality: 82, fit: 'cover', format: 'webp' })
+    previewUrlCache.set(project.id, preloadImage(optimizedUrl, assetUrl(project.preview)))
+  }
+  return previewUrlCache.get(project.id)
+}
+
+const handleMouseEnter = async (project) => {
+  const requestId = ++previewRequest
+  try {
+    const loadedUrl = await preloadProjectPreview(project)
+    if (!loadedUrl || requestId !== previewRequest) return
     hoveredPreview.value = project.preview
-    hoveredImage.value = assetUrl(project.preview, { width: 900, quality: 82, fit: 'cover' })
+    hoveredImage.value = loadedUrl
+  } catch (error) {
+    if (requestId === previewRequest) console.error('Не удалось загрузить превью проекта:', error)
   }
 }
 
