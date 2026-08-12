@@ -49,7 +49,10 @@
           <div v-else class="services-empty">Список услуг скоро появится.</div>
 
           <router-link class="services-cta" to="/contacts">
-            <span class="services-cta-kicker">Есть задача?</span>
+            <span class="services-cta-kicker">
+              <span>Есть</span>
+              <span>задача?</span>
+            </span>
             <span class="services-cta-title">Обсудить проект</span>
             <span class="services-cta-arrow" aria-hidden="true">↗</span>
           </router-link>
@@ -319,11 +322,17 @@ onUnmounted(() => {
 }
 
 .services-cta-kicker {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.34em;
   align-self: start;
+  width: fit-content;
+  max-width: 100%;
   color: rgba(241, 241, 240, 0.58);
   font-size: clamp(18px, 1vw, 30px);
   line-height: 1.25;
-  white-space: nowrap;
+  letter-spacing: 0.01em;
+  word-spacing: normal;
 }
 
 .services-cta-title,
