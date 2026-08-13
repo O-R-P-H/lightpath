@@ -6,7 +6,19 @@
       <!-- Сетка заголовка проекта -->
       <div class="project-grid-header">
         <BrandLink class="project-main-title" />
-        <div class="project-sec-title">Проекты {{ project.year ? `/ ${project.year}` : '' }}</div>
+        <div class="project-header-navigation">
+          <router-link :to="projectsBackRoute" class="project-back-link" aria-label="Вернуться к списку проектов">
+            <span aria-hidden="true">←</span> Назад
+          </router-link>
+
+          <div class="project-sec-title">
+            Проекты
+            <template v-if="project.year">
+              /
+              <router-link :to="projectYearRoute" class="project-year-link">{{ project.year }}</router-link>
+            </template>
+          </div>
+        </div>
       </div>
 
       <!-- Контентная область по макету -->
@@ -40,7 +52,8 @@
         <!-- Правая колонка: Заголовок, описание, слайдер и кнопка заказа -->
         <div class="project-details-col">
           <h1 class="project-title-header">
-            {{ project.title }} <span v-if="project.year" class="project-year">{{ project.year }}</span>
+            {{ project.title }}
+            <router-link v-if="project.year" :to="projectYearRoute" class="project-year">{{ project.year }}</router-link>
           </h1>
 
           <div class="project-order-top">
@@ -110,6 +123,8 @@ const loading = ref(true)
 const error = ref(false)
 const sanitizedProjectContent = computed(() => sanitizeHtml(project.value?.content))
 const activeMedia = computed(() => galleryItems.value[activeImgIndex.value] || null)
+const projectYearRoute = computed(() => `/projects/year/${encodeURIComponent(project.value?.year || '')}`)
+const projectsBackRoute = computed(() => project.value?.year ? projectYearRoute.value : '/projects')
 
 const toGalleryItem = (file) => ({
   ...file,
@@ -244,6 +259,50 @@ onUnmounted(() => {
   line-height: 1;
 }
 
+.project-header-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.project-back-link,
+.project-year-link,
+.project-year {
+  color: inherit;
+  text-decoration: none;
+}
+
+.project-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.25rem 0;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.project-back-link,
+.project-year-link,
+.project-year {
+  transition: opacity 180ms ease;
+}
+
+@media (hover: hover) {
+  .project-back-link:hover,
+  .project-year-link:hover,
+  .project-year:hover {
+    opacity: 0.58;
+  }
+}
+
+.project-back-link:focus-visible,
+.project-year-link:focus-visible,
+.project-year:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
 @media (max-width: 759px) {
   .project-section {
     min-height: 100svh;
@@ -257,9 +316,21 @@ onUnmounted(() => {
     padding-right: 56px;
   }
 
+  .project-header-navigation {
+    align-items: flex-start;
+    flex-direction: column-reverse;
+    gap: 16px;
+  }
+
   .project-main-title,
   .project-sec-title {
     font-size: clamp(18px, 5.2vw, 22px);
+  }
+
+  .project-back-link {
+    min-height: 44px;
+    padding: 0;
+    font-size: 16px;
   }
 }
 
@@ -322,6 +393,7 @@ onUnmounted(() => {
 .project-year {
   opacity: 0.5;
   font-weight: 300;
+  flex-shrink: 0;
 }
 
 @media (min-width: 1024px) {
