@@ -83,7 +83,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import Header from '../components/Header.vue'
-import { DIRECTUS_URL, preloadImage } from '../utils/directus.js'
+import { DIRECTUS_URL, assetUrl, preloadImage } from '../utils/directus.js'
 import { scrambleElementText } from '../utils/textScramble.js'
 
 const DEFAULT_TITLE = 'Студия светового дизайна\nМацнева Николая'
@@ -91,14 +91,6 @@ const DEFAULT_FIXTURES = ['Болларды', 'Ступени', 'Забор', '�
 const DEFAULT_TEMPERATURES = ['Дневной белый', 'Нейтральный белый', 'Теплый белый', 'Янтарный']
 const DEFAULT_PLACEHOLDER_COLOR = '#171821'
 const GLYPHS = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-'
-const HOME_IMAGES = {
-  '': '/images/home/00-light-off.webp',
-  'Забор': '/images/home/01-fence.webp',
-  'Забор|Фасадные': '/images/home/02-fence-facade.webp',
-  'Болларды|Забор|Фасадные': '/images/home/03-fence-facade-bollards.webp',
-  'Болларды|Забор': '/images/home/04-fence-bollards.webp',
-  'Линейные': '/images/home/05-linear.webp',
-}
 
 const [targetTitleLine1, targetTitleLine2] = DEFAULT_TITLE.split('\n')
 const titleLine1 = ref('')
@@ -106,6 +98,7 @@ const titleLine2 = ref('')
 const fixtureOptions = ref(DEFAULT_FIXTURES)
 const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
+const sceneImages = ref([])
 const displayedImageUrl = ref('')
 const serviceItems = ref([])
 const serviceListRef = ref(null)
@@ -145,8 +138,7 @@ const runScramble = (targetText, reactiveRef, delay = 0) => {
 }
 
 const fixtureGroupKey = (value) => {
-  const fixtures = new Set(String(value || '')
-    .split(/\s*\+\s*/)
+  const fixtures = new Set((Array.isArray(value) ? value : String(value || '').split(/\s*\+\s*/))
     .map((fixture) => fixture.trim())
     .filter((fixture) => fixture && fixture !== 'Свет выключен'))
 
@@ -158,11 +150,23 @@ const currentSceneLabel = computed(() => (
   selectedFixtures.value.length ? selectedFixtures.value.join(', ') : 'Свет выключен'
 ))
 
-const currentImageUrl = computed(() => (
-  selectedTemperature.value === DEFAULT_TEMPERATURES[0]
-    ? HOME_IMAGES[selectedFixtureKey.value] || ''
-    : ''
+const currentImage = computed(() => (
+  sceneImages.value.find((item) => (
+    fixtureGroupKey(item.fixtureFilters) === selectedFixtureKey.value
+    && item.temperatureFilter === selectedTemperature.value
+    && item.image
+  )) || null
 ))
+
+const imageAssetUrl = (image) => assetUrl(image, {
+  width: 2400,
+  height: 1600,
+  fit: 'cover',
+  quality: 90,
+  format: 'webp',
+})
+
+const currentImageUrl = computed(() => imageAssetUrl(currentImage.value?.image))
 
 const displayImageWhenReady = async (url) => {
   const requestId = ++imageLoadRequest
@@ -172,7 +176,7 @@ const displayImageWhenReady = async (url) => {
   }
 
   try {
-    const loadedUrl = await preloadImage(url)
+    const loadedUrl = await preloadImage(url, assetUrl(currentImage.value?.image))
     if (requestId !== imageLoadRequest) return
     displayedImageUrl.value = loadedUrl
   } catch (error) {
@@ -209,7 +213,8 @@ const selectTemperature = (temperature) => {
 
 const loadHomepage = async () => {
   const query = new URLSearchParams({
-    fields: 'fixture_filters,temperature_filters,placeholder_color',
+    fields: 'fixture_filters,temperature_filters,placeholder_color,scene_items.id,scene_items.sort,scene_items.image.id,scene_items.fixture_filters,scene_items.temperature_filter',
+    'deep[scene_items][_sort]': 'sort',
     _: String(Date.now()),
   })
 
@@ -228,10 +233,22 @@ const loadHomepage = async () => {
     placeholderColor.value = parseColor(data.placeholder_color)
     selectedFixtures.value = []
     selectedTemperature.value = temperatureOptions.value[0]
+    sceneImages.value = Array.isArray(data.scene_items)
+      ? data.scene_items
+        .map((item, index) => ({
+          id: item?.id || `${index}-${item?.image?.id || item?.image || ''}`,
+          image: item?.image || '',
+          fixtureFilters: Array.isArray(item?.fixture_filters) ? item.fixture_filters : [],
+          temperatureFilter: String(item?.temperature_filter || '').trim(),
+        }))
+        .filter((item) => item.image && item.temperatureFilter)
+      : []
 
     await displayImageWhenReady(currentImageUrl.value)
     window.setTimeout(() => {
-      Object.values(HOME_IMAGES).forEach((url) => preloadImage(url).catch(() => {}))
+      sceneImages.value.forEach((item) => {
+        preloadImage(imageAssetUrl(item.image), assetUrl(item.image)).catch(() => {})
+      })
     }, 250)
   } catch (error) {
     if (error.name !== 'AbortError') {
