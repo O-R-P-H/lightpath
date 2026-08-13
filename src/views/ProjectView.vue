@@ -261,9 +261,11 @@ onUnmounted(() => {
 
 .project-header-navigation {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 1.25rem;
+  min-width: 0;
+  padding-right: 5rem;
 }
 
 .project-back-link,
@@ -275,11 +277,12 @@ onUnmounted(() => {
 
 .project-back-link {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.4em;
-  padding: 0.25rem 0;
+  padding: 0;
   font-size: 0.72rem;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .project-back-link,
@@ -317,9 +320,11 @@ onUnmounted(() => {
   }
 
   .project-header-navigation {
-    align-items: flex-start;
-    flex-direction: column-reverse;
-    gap: 16px;
+    align-items: baseline;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding-right: 0;
   }
 
   .project-main-title,
@@ -328,8 +333,7 @@ onUnmounted(() => {
   }
 
   .project-back-link {
-    min-height: 44px;
-    padding: 0;
+    padding: 12px 0;
     font-size: 16px;
   }
 }

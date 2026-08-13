@@ -38,11 +38,8 @@
                 class="project-row"
                 @mouseenter="handleMouseEnter(project, $event)"
             >
-              <!--
-                ПРАВКА КЛИЕНТА: Клик на Название теперь ведет
-                в год проекта (/projects/year/:year), а не в сам проект!
-              -->
-              <router-link :to="projectRoute(project)" class="project-title-link">
+              <!-- Название открывает проект, год — архив проектов за этот год. -->
+              <router-link :to="`/projects/${project.id}`" class="project-title-link">
                 <span>{{ project.title }}</span>
               </router-link>
 
@@ -149,10 +146,6 @@ const primaryProjects = computed(() => {
         return yearDifference || String(a.title || '').localeCompare(String(b.title || ''), 'ru')
       })
 })
-
-const projectRoute = (project) => (
-  project.year ? `/projects/year/${project.year}` : `/projects/${project.id}`
-)
 
 // Наведение мыши: меняем картинку и плавно перемещаем контейнер по вертикали
 const handleMouseEnter = (project, event) => {
