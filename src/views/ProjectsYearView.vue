@@ -30,7 +30,13 @@
         <!-- Колонка 3: Список проектов за этот год (БЕЗ ГОДА СПРАВА) -->
         <div class="projects-col-3">
           <ul class="projects-list">
-            <li class="section-column-title">Проекты / {{ year }}</li>
+            <li class="section-column-title">
+              <nav class="catalog-breadcrumbs" aria-label="Навигация по проектам">
+                <router-link to="/projects" class="breadcrumb-link">Проекты</router-link>
+                <span class="breadcrumb-separator" aria-hidden="true">/</span>
+                <span aria-current="page">{{ year }}</span>
+              </nav>
+            </li>
 
             <li
                 v-for="project in yearProjects"
@@ -227,6 +233,32 @@ onUnmounted(() => {
   opacity: 0.5;
 }
 
+.catalog-breadcrumbs {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4em;
+  min-width: 0;
+  padding-right: clamp(5.5rem, 9vw, 9rem);
+  white-space: nowrap;
+}
+
+.breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 180ms ease;
+}
+
+@media (hover: hover) {
+  .breadcrumb-link:hover {
+    opacity: 0.58;
+  }
+}
+
+.breadcrumb-link:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
 .projects-list {
   margin: 0;
   padding: 0;
@@ -273,6 +305,10 @@ onUnmounted(() => {
   .section-column-title {
     margin-bottom: 18px;
     font-size: 14px;
+  }
+
+  .catalog-breadcrumbs {
+    padding-right: 0;
   }
 
   .project-title-link > span {

@@ -6,19 +6,15 @@
       <!-- Сетка заголовка проекта -->
       <div class="project-grid-header">
         <BrandLink class="project-main-title" />
-        <div class="project-header-navigation">
-          <router-link :to="projectsBackRoute" class="project-back-link" aria-label="Вернуться к списку проектов">
-            <span aria-hidden="true">←</span> Назад
-          </router-link>
-
-          <div class="project-sec-title">
-            Проекты
-            <template v-if="project.year">
-              /
-              <router-link :to="projectYearRoute" class="project-year-link">{{ project.year }}</router-link>
-            </template>
-          </div>
-        </div>
+        <nav class="project-breadcrumbs" aria-label="Навигация по проектам">
+          <router-link to="/projects" class="breadcrumb-link">Проекты</router-link>
+          <template v-if="project.year">
+            <span class="breadcrumb-separator" aria-hidden="true">/</span>
+            <router-link :to="projectYearRoute" class="breadcrumb-link">{{ project.year }}</router-link>
+          </template>
+          <span class="breadcrumb-separator" aria-hidden="true">/</span>
+          <span class="breadcrumb-current" aria-current="page" :title="project.title">{{ project.title }}</span>
+        </nav>
       </div>
 
       <!-- Контентная область по макету -->
@@ -124,7 +120,6 @@ const error = ref(false)
 const sanitizedProjectContent = computed(() => sanitizeHtml(project.value?.content))
 const activeMedia = computed(() => galleryItems.value[activeImgIndex.value] || null)
 const projectYearRoute = computed(() => `/projects/year/${encodeURIComponent(project.value?.year || '')}`)
-const projectsBackRoute = computed(() => project.value?.year ? projectYearRoute.value : '/projects')
 
 const toGalleryItem = (file) => ({
   ...file,
@@ -249,7 +244,8 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.project-main-title, .project-sec-title {
+.project-main-title,
+.project-breadcrumbs {
   margin: 0;
   padding: 0;
   font-size: 0.72rem;
@@ -259,48 +255,47 @@ onUnmounted(() => {
   line-height: 1;
 }
 
-.project-header-navigation {
+.project-breadcrumbs {
   display: flex;
   align-items: baseline;
   justify-content: flex-start;
-  gap: 1.25rem;
+  gap: 0.4em;
   min-width: 0;
-  padding-right: 5rem;
+  padding-right: clamp(5.5rem, 9vw, 9rem);
+  white-space: nowrap;
 }
 
-.project-back-link,
-.project-year-link,
+.breadcrumb-link,
 .project-year {
   color: inherit;
   text-decoration: none;
 }
 
-.project-back-link {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4em;
-  padding: 0;
-  font-size: 0.72rem;
-  line-height: 1;
-  white-space: nowrap;
+.breadcrumb-link,
+.breadcrumb-separator {
+  flex: 0 0 auto;
 }
 
-.project-back-link,
-.project-year-link,
+.breadcrumb-current {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.5;
+}
+
+.breadcrumb-link,
 .project-year {
   transition: opacity 180ms ease;
 }
 
 @media (hover: hover) {
-  .project-back-link:hover,
-  .project-year-link:hover,
+  .breadcrumb-link:hover,
   .project-year:hover {
     opacity: 0.58;
   }
 }
 
-.project-back-link:focus-visible,
-.project-year-link:focus-visible,
+.breadcrumb-link:focus-visible,
 .project-year:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: 4px;
@@ -319,22 +314,14 @@ onUnmounted(() => {
     padding-right: 56px;
   }
 
-  .project-header-navigation {
-    align-items: baseline;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px 18px;
-    padding-right: 0;
-  }
-
   .project-main-title,
-  .project-sec-title {
+  .project-breadcrumbs {
     font-size: clamp(18px, 5.2vw, 22px);
   }
 
-  .project-back-link {
-    padding: 12px 0;
-    font-size: 16px;
+  .project-breadcrumbs {
+    padding-right: 0;
+    line-height: 1.25;
   }
 }
 
