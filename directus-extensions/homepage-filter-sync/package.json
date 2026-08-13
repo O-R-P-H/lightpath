@@ -1,0 +1,12 @@
+{
+  "name": "directus-extension-homepage-filter-sync",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Keeps homepage image filter selectors in sync with homepage filter lists.",
+  "directus:extension": {
+    "type": "hook",
+    "path": "index.js",
+    "source": "index.js",
+    "host": "^11.1.0"
+  }
+}
