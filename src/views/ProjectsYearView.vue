@@ -32,7 +32,7 @@
           <ul class="projects-list">
             <li class="section-column-title">
               <nav class="catalog-breadcrumbs" aria-label="Навигация по проектам">
-                <router-link to="/projects" class="breadcrumb-link">Проекты</router-link>
+                <a href="/projects" class="breadcrumb-link">Проекты</a>
                 <span class="breadcrumb-separator" aria-hidden="true">/</span>
                 <span aria-current="page">{{ year }}</span>
               </nav>
@@ -45,9 +45,9 @@
                 @mouseenter="handleMouseEnter(project)"
             >
               <!-- Клик на Название ведет на детальную страницу -->
-              <router-link :to="`/projects/${project.id}`" class="project-title-link">
+              <a :href="`/projects/${project.id}`" class="project-title-link">
                 <span>{{ project.title }}</span>
-              </router-link>
+              </a>
             </li>
           </ul>
         </div>

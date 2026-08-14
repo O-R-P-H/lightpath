@@ -39,14 +39,14 @@
                 @mouseenter="handleMouseEnter(project, $event)"
             >
               <!-- Название открывает проект, год — архив проектов за этот год. -->
-              <router-link :to="`/projects/${project.id}`" class="project-title-link">
+              <a :href="`/projects/${project.id}`" class="project-title-link">
                 <span>{{ project.title }}</span>
-              </router-link>
+              </a>
 
               <!-- Клик на Год также ведет на страницу проектов этого года -->
-              <router-link v-if="project.year" :to="`/projects/year/${project.year}`" class="project-year-link">
+              <a v-if="project.year" :href="`/projects/year/${project.year}`" class="project-year-link">
                 <span>{{ project.year }}</span>
-              </router-link>
+              </a>
             </li>
           </ul>
         </div>

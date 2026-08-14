@@ -7,10 +7,10 @@
       <div class="project-grid-header">
         <BrandLink class="project-main-title" />
         <nav class="project-breadcrumbs" aria-label="Навигация по проектам">
-          <router-link to="/projects" class="breadcrumb-link">Проекты</router-link>
+          <a href="/projects" class="breadcrumb-link">Проекты</a>
           <template v-if="project.year">
             <span class="breadcrumb-separator" aria-hidden="true">/</span>
-            <router-link :to="projectYearRoute" class="breadcrumb-link">{{ project.year }}</router-link>
+            <a :href="projectYearRoute" class="breadcrumb-link">{{ project.year }}</a>
           </template>
           <span class="breadcrumb-separator" aria-hidden="true">/</span>
           <span class="breadcrumb-current" aria-current="page" :title="project.title">{{ project.title }}</span>
@@ -49,7 +49,7 @@
         <div class="project-details-col">
           <h1 class="project-title-header">
             {{ project.title }}
-            <router-link v-if="project.year" :to="projectYearRoute" class="project-year">{{ project.year }}</router-link>
+            <a v-if="project.year" :href="projectYearRoute" class="project-year">{{ project.year }}</a>
           </h1>
 
           <div class="project-order-top">
