@@ -1,4 +1,6 @@
-export const DIRECTUS_URL = 'https://lightcms.tsukawa.ru'
+export const DIRECTUS_URL = (
+  import.meta.env.VITE_DIRECTUS_URL || 'https://cms.nikolaym.online'
+).replace(/\/+$/, '')
 
 export const assetUrl = (file, options = {}) => {
   const id = typeof file === 'object' && file !== null ? file.id : file
