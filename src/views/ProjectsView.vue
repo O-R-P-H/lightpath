@@ -311,6 +311,20 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+/*
+  На 4K-экранах стандартный лимит 290px делает превью слишком маленьким
+  относительно сетки каталога. Увеличиваем только на широких вьюпортах,
+  сохраняя центрирование и поведение на обычных десктопах.
+*/
+@media (min-width: 2200px) {
+  .preview-container {
+    width: min(38vw, 1450px) !important;
+    max-width: none !important;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
 /* Колонка 3 */
 .section-column-title {
   font-size: 0.72rem;
