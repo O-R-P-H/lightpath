@@ -302,9 +302,9 @@ const loadServices = async () => {
     const serviceLinks = serviceListRef.value?.querySelectorAll('a') || []
     serviceLinks.forEach((element, index) => {
       animationCleanups.push(scrambleElementText(element, {
-        delay: 620 + index * 105,
-        duration: 720,
-        frameDuration: 45,
+        delay: 120 + index * 55,
+        duration: 420,
+        frameDuration: 35,
       }))
     })
   } catch (error) {
