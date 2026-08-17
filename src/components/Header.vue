@@ -265,6 +265,7 @@ onUnmounted(() => {
     grid-column-start: 3;
     text-align: left;
     display: block;
+    padding-top: calc(1rem + var(--space-s));
   }
 }
 

@@ -380,7 +380,8 @@ onUnmounted(() => {
 .hero-list {
   display: grid;
   align-content: start;
-  padding-top: 1.08rem;
+  /* Начало списка совпадает с нижней линией двухстрочного заголовка. */
+  padding-top: 2rem;
 }
 
 .hero-list a {

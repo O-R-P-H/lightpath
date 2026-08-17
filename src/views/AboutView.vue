@@ -13,16 +13,16 @@
 
       <!-- Контентная область -->
       <div class="about-content" v-if="!loading && !error">
-        <!-- Левая текстовая колонка, получаемая из WYSIWYG-поля title в Directus -->
-        <div class="text-container" ref="textContainerRef" v-html="sanitizedTextAbout"></div>
-
-        <!-- Абсолютно позиционированный портрет в правом нижнем углу с компенсацией пустоты PNG -->
+        <!-- На desktop портрет позиционируется поверх композиции, на mobile идёт первым. -->
         <img
             v-if="photoUrl"
             :src="photoUrl"
             alt="Николай Мацнев"
             class="portrait-img"
         />
+
+        <!-- Левая текстовая колонка, получаемая из WYSIWYG-поля title в Directus -->
+        <div class="text-container" ref="textContainerRef" v-html="sanitizedTextAbout"></div>
       </div>
 
       <!-- Лоадер на время загрузки данных из CMS -->
@@ -228,7 +228,16 @@ onUnmounted(() => {
 
 @media (max-width: 759px) {
   .portrait-img {
-    display: none;
+    position: relative;
+    inset: auto;
+    display: block;
+    width: calc(100% + 40px);
+    height: min(62svh, 560px);
+    margin: 0 -20px;
+    object-fit: contain;
+    object-position: center top;
+    opacity: 1;
+    z-index: 1;
   }
 }
 

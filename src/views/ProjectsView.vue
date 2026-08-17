@@ -291,15 +291,21 @@ onUnmounted(() => {
 /* Компактное превью плавно скользящее по оси Y */
 .preview-container {
   position: absolute;
-  width: 80% !important;
-  max-width: 290px !important;
+  /*
+    Превью масштабируется вместе с колонкой, но никогда не выходит за неё.
+    Ограничение через vw без привязки к колонке на широких desktop-экранах
+    приводило к наложению изображения на список проектов.
+  */
+  width: min(90%, 24vw, 1200px);
+  max-width: 100%;
   aspect-ratio: 1.5;
   background-color: #ffffff05;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  left: 10%; /* Центрируем по ширине */
+  left: 50%;
+  transform: translateX(-50%);
 
   /* Плавное скольжение по вертикали за курсором */
   transition: top 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -309,20 +315,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/*
-  На 4K-экранах стандартный лимит 290px делает превью слишком маленьким
-  относительно сетки каталога. Увеличиваем только на широких вьюпортах,
-  сохраняя центрирование и поведение на обычных десктопах.
-*/
-@media (min-width: 2200px) {
-  .preview-container {
-    width: min(38vw, 1450px) !important;
-    max-width: none !important;
-    left: 50%;
-    transform: translateX(-50%);
-  }
 }
 
 /* Колонка 3 */

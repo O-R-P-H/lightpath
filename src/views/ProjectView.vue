@@ -301,6 +301,25 @@ onUnmounted(() => {
   outline-offset: 4px;
 }
 
+/*
+  При сильном desktop zoom ширины второй колонки уже недостаточно для
+  хлебных крошек и фиксированной кнопки меню. В этом диапазоне заголовок
+  остаётся desktop-композицией, но крошки переходят на собственную строку.
+*/
+@media (min-width: 760px) and (max-width: 1199px) {
+  .project-grid-header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding-right: clamp(112px, 13vw, 160px);
+  }
+
+  .project-breadcrumbs {
+    padding-right: 0;
+    font-size: clamp(18px, 2vw, 22px);
+    line-height: 1.2;
+  }
+}
+
 @media (max-width: 759px) {
   .project-section {
     min-height: 100svh;

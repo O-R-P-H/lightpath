@@ -224,6 +224,17 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+/*
+  Первая строка бренда шире первой колонки каталога. Держим превью ниже
+  двухстрочного бренд-блока на всём desktop-диапазоне, чтобы они никогда
+  не пересекались при изменении размера окна или browser zoom.
+*/
+@media (min-width: 760px) {
+  .projects-col-2 {
+    padding-top: 2rem;
+  }
+}
+
 .section-column-title {
   font-size: 0.72rem;
   font-weight: 400;
