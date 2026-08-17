@@ -233,7 +233,7 @@ onUnmounted(() => {
     display: block;
     width: calc(100% + 40px);
     height: min(62svh, 560px);
-    margin: 0 -20px;
+    margin: 0 -20px 40px;
     object-fit: contain;
     object-position: center top;
     opacity: 1;
