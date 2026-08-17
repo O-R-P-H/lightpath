@@ -296,7 +296,7 @@ onUnmounted(() => {
     Ограничение через vw без привязки к колонке на широких desktop-экранах
     приводило к наложению изображения на список проектов.
   */
-  width: min(90%, 24vw, 1200px);
+  width: min(90%, 24vw);
   max-width: 100%;
   aspect-ratio: 1.5;
   background-color: #ffffff05;
@@ -353,7 +353,7 @@ onUnmounted(() => {
 
 .project-title-link > span, .project-year-link > span {
   display: inline-block;
-  font-size: clamp(18px, 1.35vw, 54px) !important;
+  font-size: 1.35vw !important;
   font-weight: 300 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -455,7 +455,7 @@ html.reference-root-active {
 
 @media (min-width: 760px) {
   html.reference-root-active {
-    font-size: clamp(36px, 3vw, 116px) !important;
+    font-size: 3vw !important;
   }
 }
 

@@ -369,7 +369,8 @@ html.reference-root-active {
 
 @media (min-width: 760px) {
   html.reference-root-active {
-    font-size: clamp(36px, 3vw, 116px) !important;
+    /* 3vw reproduces the Full HD scale and counterbalances desktop browser zoom. */
+    font-size: 3vw !important;
   }
 }
 

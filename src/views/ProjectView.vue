@@ -306,20 +306,6 @@ onUnmounted(() => {
   хлебных крошек и фиксированной кнопки меню. В этом диапазоне заголовок
   остаётся desktop-композицией, но крошки переходят на собственную строку.
 */
-@media (min-width: 760px) and (max-width: 1199px) {
-  .project-grid-header {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding-right: clamp(112px, 13vw, 160px);
-  }
-
-  .project-breadcrumbs {
-    padding-right: 0;
-    font-size: clamp(18px, 2vw, 22px);
-    line-height: 1.2;
-  }
-}
-
 @media (max-width: 759px) {
   .project-section {
     min-height: 100svh;
@@ -353,7 +339,7 @@ onUnmounted(() => {
   gap: var(--space-m);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .project-content {
     grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
   }
@@ -385,7 +371,7 @@ onUnmounted(() => {
 }
 
 .project-title-header {
-  font-size: clamp(30px, 2.2vw, 84px) !important;
+  font-size: 2.2vw !important;
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: -0.03em;
@@ -406,9 +392,9 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .project-title-header {
-    font-size: clamp(30px, 2.2vw, 84px) !important;
+    font-size: 2.2vw !important;
   }
 }
 
@@ -424,7 +410,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   width: 5.5vw;
-  min-width: 55px;
+  min-width: 2.8646vw;
 }
 
 .slider-arrow {
@@ -510,15 +496,15 @@ onUnmounted(() => {
 }
 
 .about-label {
-  font-size: clamp(15px, 1.1vw, 34px) !important;
+  font-size: 1.1vw !important;
   font-weight: 400 !important;
   margin: 0 0 1rem 0;
   letter-spacing: 0;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .about-label {
-    font-size: clamp(15px, 1.1vw, 34px) !important;
+    font-size: 1.1vw !important;
   }
 }
 
@@ -535,7 +521,7 @@ onUnmounted(() => {
 /* Стилизация кнопки заказа под макет (без дефолтного синего цвета) */
 .cta-link {
   display: inline-block;
-  font-size: clamp(15px, 1.1vw, 34px) !important;
+  font-size: 1.1vw !important;
   font-weight: 400 !important;
   color: var(--color-front, #f1f1f0) !important; /* Белый цвет текста */
   border: 1px solid var(--color-front, #f1f1f0) !important; /* Белая рамка */
@@ -552,9 +538,9 @@ onUnmounted(() => {
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .cta-link {
-    font-size: clamp(15px, 1.1vw, 34px) !important;
+    font-size: 1.1vw !important;
   }
 }
 
@@ -661,6 +647,10 @@ onUnmounted(() => {
     font-size: 18px !important;
   }
 
+  .cta-link {
+    font-size: 16px !important;
+  }
+
   .project-loading {
     min-height: 100svh;
     padding: 80px 20px 40px;
@@ -693,7 +683,7 @@ onUnmounted(() => {
 }
 
 .project-html-content p {
-  font-size: clamp(14px, 0.8vw, 30px) !important;
+  font-size: 0.8vw !important;
   font-weight: 300 !important;
   line-height: 1.5 !important;
   letter-spacing: -0.01em !important;
@@ -703,9 +693,9 @@ onUnmounted(() => {
   opacity: 0.85 !important;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .project-html-content p {
-    font-size: clamp(16px, 0.86vw, 32px) !important;
+    font-size: 0.86vw !important;
   }
 }
 

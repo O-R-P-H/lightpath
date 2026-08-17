@@ -196,10 +196,10 @@ onUnmounted(() => {
   transition: opacity 0.2s ease;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 760px) {
   .text-container {
     /* Ограничиваем длину строки на широких и 4K-экранах. */
-    max-width: min(78%, 1500px) !important;
+    max-width: 78% !important;
   }
 }
 
@@ -210,20 +210,12 @@ onUnmounted(() => {
 .portrait-img {
   position: absolute;
   bottom: 0;
-  right: -80px; /* Сдвиг на 80px вправо для идеальной компенсации полей в PNG */
+  right: -4.1667vw; /* -80px в эталонном Full HD, пропорционально desktop-масштабу */
   height: 70vh; /* Установили высоту 70% от высоты экрана по макету */
   width: auto;
   object-fit: contain;
   pointer-events: none;
   z-index: 1;
-}
-
-@media (max-width: 1023px) {
-  .portrait-img {
-    height: 45vh;
-    right: -20px;
-    opacity: 0.25; /* Полупрозрачный фон на телефонах во избежание перекрытия */
-  }
 }
 
 @media (max-width: 759px) {
@@ -281,12 +273,12 @@ onUnmounted(() => {
 /* --- НАСТРОЙКИ ДЛЯ КОМПЬЮТЕРОВ (Шрифт строго 20px, весь текст в одном стиле по вашему макету) --- */
 @media (min-width: 760px) {
   html.reference-root-active #about .text-container * {
-    font-size: clamp(20px, 1vw, 38px) !important;
+    font-size: 1vw !important;
     font-weight: 300 !important;
     line-height: 1.6 !important;
     letter-spacing: -0.01em !important;
     word-spacing: 0.12em !important;
-    margin: 0 0 16px 0 !important; /* Увеличили отступ пропорционально шрифту */
+    margin: 0 0 .2778rem 0 !important;
     color: #f1f1f0 !important;
     opacity: 0.9 !important;
   }
@@ -294,16 +286,16 @@ onUnmounted(() => {
   /* Восстановление маркеров списка из WYSIWYG на десктопе */
   html.reference-root-active #about .text-container ul {
     list-style: disc !important; /* Возвращаем стандартные круглые маркеры */
-    margin: 0 0 28px 0 !important;
-    padding-left: 20px !important; /* Добавляем левый отступ, чтобы маркеры влезли */
+    margin: 0 0 .4861rem 0 !important;
+    padding-left: .3472rem !important;
   }
 
   html.reference-root-active #about .text-container li {
-    font-size: clamp(20px, 1vw, 38px) !important;
+    font-size: 1vw !important;
     font-weight: 300 !important;
     line-height: 1.6 !important;
     list-style: disc !important; /* Дублируем показ точек */
-    margin-bottom: 12px !important; /* Вертикальный отступ между li */
+    margin-bottom: .2083rem !important;
     color: #f1f1f0 !important;
     opacity: 0.9 !important;
   }
@@ -363,7 +355,7 @@ html.reference-root-active {
 
 @media (min-width: 760px) {
   html.reference-root-active {
-    font-size: clamp(36px, 3vw, 116px) !important;
+    font-size: 3vw !important;
   }
 }
 

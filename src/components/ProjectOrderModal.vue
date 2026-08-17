@@ -103,7 +103,7 @@ onUnmounted(closeModal)
   color: var(--color-front, #f1f1f0);
   padding: 0.34rem 0.54rem;
   font: inherit;
-  font-size: clamp(15px, 0.92vw, 34px);
+  font-size: 0.92vw;
   line-height: 1;
   letter-spacing: 0;
   backdrop-filter: blur(12px);
@@ -124,13 +124,13 @@ onUnmounted(closeModal)
   z-index: 10020;
   display: grid;
   place-items: center;
-  padding: clamp(16px, 3vw, 56px);
+  padding: 3vw;
   background: rgba(2, 3, 10, 0.68);
   backdrop-filter: blur(18px);
 }
 
 .contact-modal__panel {
-  width: min(clamp(720px, 44vw, 1200px), 100%);
+  width: min(44vw, 100%);
   border: 1px solid rgba(241, 241, 240, 0.28);
   background:
     radial-gradient(circle at 82% 18%, rgba(104, 103, 198, 0.22), transparent 42%),
@@ -138,7 +138,7 @@ onUnmounted(closeModal)
   color: #f1f1f0;
   letter-spacing: 0;
   line-height: normal;
-  padding: clamp(22px, 3vw, 86px);
+  padding: 3vw;
   box-shadow: 0 32px 100px rgba(0, 0, 0, 0.46);
 }
 
@@ -146,27 +146,27 @@ onUnmounted(closeModal)
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  gap: 1.25vw;
 }
 
 .contact-modal__header h2 {
   margin: 0;
-  font-size: clamp(34px, 4vw, 108px);
+  font-size: 4vw;
   font-weight: 400;
   letter-spacing: -0.05em;
   line-height: 0.95;
 }
 
 .contact-modal__close {
-  width: clamp(42px, 2.6vw, 70px);
-  height: clamp(42px, 2.6vw, 70px);
+  width: 2.6vw;
+  height: 2.6vw;
   flex: 0 0 auto;
   border: 1px solid rgba(241, 241, 240, 0.35);
   border-radius: 50%;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: clamp(28px, 1.7vw, 46px);
+  font-size: 1.7vw;
   line-height: 1;
 }
 
@@ -174,14 +174,14 @@ onUnmounted(closeModal)
 .contact-modal__note,
 .contact-modal__empty {
   max-width: 38ch;
-  margin: clamp(24px, 1.8vw, 48px) 0;
-  font-size: clamp(16px, 1.05vw, 30px);
+  margin: 1.8vw 0;
+  font-size: 1.05vw;
   line-height: 1.45;
   opacity: 0.76;
 }
 
 .contact-modal__links {
-  margin: clamp(30px, 2vw, 54px) 0 0;
+  margin: 2vw 0 0;
   padding: 0;
   list-style: none;
   border-top: 1px solid rgba(241, 241, 240, 0.18);
@@ -189,14 +189,14 @@ onUnmounted(closeModal)
 
 .contact-modal__links a {
   display: grid;
-  grid-template-columns: auto minmax(90px, 0.6fr) 1fr auto;
+  grid-template-columns: auto minmax(4.6875vw, 0.6fr) 1fr auto;
   align-items: center;
-  gap: clamp(12px, 1vw, 28px);
-  padding: clamp(18px, 1.3vw, 36px) 0;
+  gap: 1vw;
+  padding: 1.3vw 0;
   border-bottom: 1px solid rgba(241, 241, 240, 0.18);
   color: inherit;
   text-decoration: none;
-  font-size: clamp(17px, 1.15vw, 34px);
+  font-size: 1.15vw;
 }
 
 .contact-modal__links svg {
@@ -210,11 +210,11 @@ onUnmounted(closeModal)
 
 .contact-modal__note {
   margin-bottom: 0;
-  font-size: clamp(13px, 0.72vw, 22px);
+  font-size: 0.72vw;
 }
 
 .contact-modal__empty {
-  padding: clamp(24px, 2vw, 52px) 0;
+  padding: 2vw 0;
   border-top: 1px solid rgba(241, 241, 240, 0.18);
   border-bottom: 1px solid rgba(241, 241, 240, 0.18);
   opacity: 0.62;

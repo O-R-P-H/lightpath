@@ -388,7 +388,7 @@ onUnmounted(() => {
   width: fit-content;
   max-width: 100%;
   color: inherit;
-  font-size: clamp(18px, 1.8vw, 58px);
+  font-size: 1.8vw;
   line-height: 1.02;
   text-decoration: none;
   overflow-wrap: anywhere;
@@ -397,12 +397,12 @@ onUnmounted(() => {
 
 .scene-explorer {
   display: grid;
-  grid-template-columns: minmax(0, 40.5vw) minmax(220px, 24vw);
+  grid-template-columns: minmax(0, 40.5vw) minmax(0, 24vw);
   grid-template-rows: auto auto;
   column-gap: 1vw;
   align-content: end;
   min-height: 100vh;
-  padding: max(150px, 16vh) 0 clamp(24px, 3vh, 64px) clamp(32px, 3vw, 96px);
+  padding: 16vh 0 3vh 3vw;
 }
 
 .scene-frame {
@@ -435,9 +435,9 @@ onUnmounted(() => {
   grid-row: 2;
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(15px, 1.7vw, 68px);
+  gap: 1.7vw;
   align-items: baseline;
-  padding-top: clamp(16px, 2.4vh, 52px);
+  padding-top: 2.4vh;
 }
 
 .temperature-filter {
@@ -446,7 +446,7 @@ onUnmounted(() => {
   align-self: center;
   display: flex;
   flex-direction: column;
-  gap: clamp(24px, 5.2vh, 112px);
+  gap: 5.2vh;
 }
 
 .filter-heading {
@@ -466,7 +466,7 @@ onUnmounted(() => {
   color: rgba(241, 241, 240, .56);
   background: none;
   font: inherit;
-  font-size: clamp(15px, 1.1vw, 42px);
+  font-size: 1.1vw;
   font-weight: 400;
   letter-spacing: -.015em;
   line-height: 1.1;
@@ -531,14 +531,6 @@ onUnmounted(() => {
   .link:hover > span {
     transform: rotateX(180deg);
   }
-}
-
-@media (max-width: 1024px) and (min-width: 760px) {
-  .scene-explorer {
-    grid-template-columns: minmax(0, 54vw) minmax(180px, 30vw);
-    column-gap: 5vw;
-  }
-
 }
 
 @media (max-width: 759px) {

@@ -168,13 +168,13 @@ onUnmounted(() => {
   font-family: 'Inter', sans-serif;
   display: inline-flex;
   align-items: center;
-  gap: clamp(12px, 1vw, 28px);
+  gap: 1vw;
   letter-spacing: 0;
 }
 
 .link > .contact-label {
   display: inline-block;
-  font-size: clamp(25px, 1.75vw, 84px) !important;
+  font-size: 1.75vw !important;
   font-weight: 300 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
@@ -183,23 +183,23 @@ onUnmounted(() => {
 }
 
 .link > svg {
-  font-size: clamp(26px, 1.75vw, 84px);
+  font-size: 1.75vw;
 }
 
 .contact-value {
-  font-size: clamp(16px, 0.9vw, 44px);
+  font-size: 0.9vw;
   letter-spacing: 0;
   opacity: 0.56;
 }
 
 .contact-arrow {
-  font-size: clamp(18px, 1vw, 48px);
+  font-size: 1vw;
   opacity: 0.7;
 }
 
 .contacts-empty {
   margin: auto;
-  font-size: clamp(20px, 1.25vw, 40px);
+  font-size: 1.25vw;
   font-weight: 300;
   opacity: 0.56;
 }
@@ -217,7 +217,7 @@ onUnmounted(() => {
 }
 
 .bottom-signature > span {
-  font-size: clamp(13px, 0.48vw, 22px) !important;
+  font-size: 0.48vw !important;
   font-weight: 300;
   opacity: 0.6;
   letter-spacing: 0;
@@ -334,6 +334,10 @@ onUnmounted(() => {
 
   .bottom-signature > span {
     font-size: 12px !important;
+  }
+
+  .contacts-empty {
+    font-size: 20px;
   }
 
 }

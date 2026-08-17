@@ -294,7 +294,7 @@ onUnmounted(() => {
 
 .project-title-link > span {
   display: inline-block;
-  font-size: clamp(18px, 1.35vw, 54px) !important;
+  font-size: 1.35vw !important;
   font-weight: 300 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
