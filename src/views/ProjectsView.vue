@@ -467,6 +467,12 @@ html.reference-root-active {
   }
 }
 
+@media (min-width: 2600px) {
+  html.reference-root-active {
+    font-size: clamp(116px, 4vw, 168px) !important;
+  }
+}
+
 html.reference-root-active body {
   min-height: 100vh;
   margin: 0;

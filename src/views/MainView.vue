@@ -357,6 +357,7 @@ onUnmounted(() => {
 .hero-list {
   display: grid;
   align-content: start;
+  padding-top: 1.08rem;
 }
 
 .hero-list a {
@@ -384,7 +385,7 @@ onUnmounted(() => {
   position: relative;
   grid-column: 1;
   grid-row: 1;
-  aspect-ratio: 1.5 / 1;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
 }
 
@@ -398,7 +399,7 @@ onUnmounted(() => {
 .scene-image {
   position: absolute;
   inset: 0;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .solid-placeholder {
@@ -543,6 +544,7 @@ onUnmounted(() => {
     display: grid;
     gap: 5px;
     margin-top: clamp(26px, 5vh, 44px);
+    padding-top: 0;
     font-size: initial;
   }
 
@@ -567,7 +569,7 @@ onUnmounted(() => {
     width: 100%;
     min-width: 0;
     margin: 0;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 16 / 9;
   }
 
   .fixture-filter {
@@ -686,6 +688,14 @@ onUnmounted(() => {
   .link > span,
   .filter-button {
     transition: none;
+  }
+}
+</style>
+
+<style>
+@media (min-width: 2600px) {
+  html.reference-root-active {
+    font-size: clamp(116px, 4vw, 168px) !important;
   }
 }
 </style>
