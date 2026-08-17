@@ -53,7 +53,7 @@
           <div v-else class="services-empty">Список услуг скоро появится.</div>
 
           <router-link class="services-cta" to="/contacts">
-            <span class="services-cta-kicker">Есть задача?</span><span class="services-cta-title">Обсудить проект</span><span class="services-cta-arrow" aria-hidden="true">↗</span>
+            <span class="services-cta-kicker"><span>Есть</span><span>задача?</span></span><span class="services-cta-title">Обсудить проект</span><span class="services-cta-arrow" aria-hidden="true">↗</span>
           </router-link>
         </div>
         <div v-else-if="error" class="services-loading"><span class="loading-text">Не удалось загрузить услуги. Попробуйте обновить страницу.</span></div>
@@ -122,7 +122,7 @@ onUnmounted(() => { document.documentElement.classList.remove('reference-root-ac
 .services-shell { width: min(100%, 2400px); margin: 0 auto; }
 .services-grid-header, .services-workspace { display: grid; grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr); gap: var(--space-m); }
 .services-grid-header { padding-right: max(70px, calc(env(safe-area-inset-right) + 56px)); padding-bottom: clamp(54px, 7vw, 180px); }
-.services-main-title, .services-sec-title { margin: 0; color: #fff; font-size: 1rem; font-weight: 400; line-height: 1; letter-spacing: -.035em; }
+.services-main-title, .services-sec-title { margin: 0; color: #fff; font-size: .72rem; font-weight: 400; line-height: 1; letter-spacing: -.035em; }
 .service-detail { display: flex; min-width: 0; min-height: min(70vh, 1100px); padding: clamp(28px, 2.8vw, 84px); border: 1px solid var(--color-line); background: radial-gradient(circle at 90% 0%, rgba(112, 107, 205, .13), transparent 45%), rgba(7, 8, 18, .28); flex-direction: column; }
 .service-detail-meta, .service-detail-row { display: grid; grid-template-columns: minmax(120px, .35fr) minmax(0, 1fr); gap: clamp(18px, 1.8vw, 54px); }
 .service-detail-meta, .service-detail-row > span, .accordion-row > span { color: rgba(241, 241, 240, .55); font-size: clamp(13px, .68vw, 25px); font-weight: 300; line-height: 1.3; letter-spacing: .055em; text-transform: uppercase; }
@@ -142,7 +142,7 @@ onUnmounted(() => { document.documentElement.classList.remove('reference-root-ac
 .services-accordion { display: none; }
 .services-empty { padding: clamp(48px, 6vw, 160px) 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); font-size: clamp(24px, 2vw, 52px); font-weight: 300; opacity: .58; }
 .services-cta { display: grid; grid-template-columns: minmax(120px, .62fr) minmax(0, 2.15fr) auto; gap: clamp(24px, 4vw, 110px); align-items: end; margin-top: clamp(80px, 10vw, 280px); padding: clamp(30px, 4vw, 100px) 0 clamp(50px, 6vw, 150px); border-top: 1px solid var(--color-line); color: inherit; text-decoration: none; }
-.services-cta-kicker { align-self: start; color: rgba(241, 241, 240, .58); font-size: clamp(18px, 1vw, 30px); line-height: 1.3; }
+.services-cta-kicker { display: inline-flex; flex-wrap: nowrap; gap: .38em; align-self: start; width: max-content; max-width: 100%; padding-top: .12em; color: rgba(241, 241, 240, .68); font-size: clamp(21px, 1.2vw, 38px); line-height: 1.3; letter-spacing: 0; word-spacing: normal; }
 .services-cta-title, .services-cta-arrow { font-size: clamp(46px, 6.2vw, 168px); font-weight: 300; line-height: .9; letter-spacing: -.06em; }
 .services-cta-title { overflow-wrap: anywhere; }
 .services-loading { display: grid; min-height: 75vh; place-items: center; }
@@ -172,6 +172,5 @@ onUnmounted(() => { document.documentElement.classList.remove('reference-root-ac
 <style>
 html.reference-root-active { margin: 0; padding: 0; background-color: #090a16; scroll-behavior: smooth; font-family: 'Inter', sans-serif !important; font-size: clamp(28px, 7.5vw, 58px) !important; line-height: 1 !important; letter-spacing: -0.04em; --space-s: .2rem; --space-m: .66rem; --space-l: 1rem; --color-front: #f1f1f0; --color-back: #090a16; --color-line: rgba(180, 182, 224, .22); }
 @media (min-width: 760px) { html.reference-root-active { font-size: clamp(36px, 3vw, 116px) !important; } }
-@media (min-width: 2600px) { html.reference-root-active { font-size: clamp(116px, 4vw, 168px) !important; } }
 html.reference-root-active body { min-height: 100vh; margin: 0; padding: 0; font-family: 'Inter', sans-serif !important; }
 </style>

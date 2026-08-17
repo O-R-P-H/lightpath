@@ -33,6 +33,7 @@
             :class="{ active: selectedFixtures.includes(option) }"
             type="button"
             :aria-pressed="selectedFixtures.includes(option)"
+            @pointerenter="preloadFixture(option)"
             @click="toggleFixture(option)"
           >
             {{ option }}
@@ -50,6 +51,7 @@
             :class="{ active: option === selectedTemperature }"
             type="button"
             :aria-pressed="option === selectedTemperature"
+            @pointerenter="preloadTemperature(option)"
             @click="selectTemperature(option)"
           >
             {{ option }}
@@ -159,10 +161,10 @@ const currentImage = computed(() => (
 ))
 
 const imageAssetUrl = (image) => assetUrl(image, {
-  width: 2400,
-  height: 1600,
+  width: 1720,
+  height: 960,
   fit: 'cover',
-  quality: 90,
+  quality: 85,
   format: 'webp',
 })
 
@@ -211,6 +213,32 @@ const selectTemperature = (temperature) => {
   selectedTemperature.value = temperature
 }
 
+const findScene = (fixtures, temperature) => {
+  const targetKey = fixtureGroupKey(fixtures.join(' + '))
+  return sceneImages.value.find((item) => (
+    fixtureGroupKey(item.fixtureFilters) === targetKey
+    && item.temperatureFilter === temperature
+    && item.image
+  ))
+}
+
+const preloadScene = (fixtures, temperature) => {
+  const scene = findScene(fixtures, temperature)
+  if (!scene?.image) return
+  preloadImage(imageAssetUrl(scene.image), assetUrl(scene.image)).catch(() => {})
+}
+
+const preloadFixture = (fixture) => {
+  const nextFixtures = selectedFixtures.value.includes(fixture)
+    ? selectedFixtures.value.filter((item) => item !== fixture)
+    : fixtureOptions.value.filter((item) => item === fixture || selectedFixtures.value.includes(item))
+  preloadScene(nextFixtures, selectedTemperature.value)
+}
+
+const preloadTemperature = (temperature) => {
+  preloadScene(selectedFixtures.value, temperature)
+}
+
 const loadHomepage = async () => {
   const query = new URLSearchParams({
     fields: 'fixture_filters,temperature_filters,placeholder_color,scene_items.id,scene_items.sort,scene_items.image.id,scene_items.fixture_filters,scene_items.temperature_filter',
@@ -245,11 +273,6 @@ const loadHomepage = async () => {
       : []
 
     await displayImageWhenReady(currentImageUrl.value)
-    window.setTimeout(() => {
-      sceneImages.value.forEach((item) => {
-        preloadImage(imageAssetUrl(item.image), assetUrl(item.image)).catch(() => {})
-      })
-    }, 250)
   } catch (error) {
     if (error.name !== 'AbortError') {
       console.error('Не удалось загрузить главную страницу из Directus:', error)
@@ -385,7 +408,7 @@ onUnmounted(() => {
   position: relative;
   grid-column: 1;
   grid-row: 1;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 43 / 24;
   overflow: hidden;
 }
 
@@ -399,7 +422,7 @@ onUnmounted(() => {
 .scene-image {
   position: absolute;
   inset: 0;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .solid-placeholder {
@@ -569,7 +592,7 @@ onUnmounted(() => {
     width: 100%;
     min-width: 0;
     margin: 0;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 43 / 24;
   }
 
   .fixture-filter {
@@ -688,14 +711,6 @@ onUnmounted(() => {
   .link > span,
   .filter-button {
     transition: none;
-  }
-}
-</style>
-
-<style>
-@media (min-width: 2600px) {
-  html.reference-root-active {
-    font-size: clamp(116px, 4vw, 168px) !important;
   }
 }
 </style>
