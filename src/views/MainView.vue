@@ -5,17 +5,18 @@
     <header class="hero-header">
       <router-link to="/" class="hero-home-link" aria-label="На главную">
         <h1 class="hero-title">
-          <span class="scramble-line">{{ titleLine1 }}</span>
+          <span class="scramble-line" :data-scramble-text="titleLine1">{{ targetTitleLine1 }}</span>
           <br />
-          <span class="scramble-line">{{ titleLine2 }}</span>
+          <span class="scramble-line" :data-scramble-text="titleLine2">{{ targetTitleLine2 }}</span>
         </h1>
       </router-link>
 
-      <nav ref="serviceListRef" class="hero-list" aria-label="Услуги">
+      <nav class="hero-list" aria-label="Услуги">
         <router-link
           v-for="(service, index) in serviceItems"
           :key="`${service.title}-${index}`"
           :to="{ path: '/gallery', hash: `#service-${String(index + 1).padStart(2, '0')}` }"
+          :data-scramble-text="service.scrambleTitle"
         >
           {{ service.navigationTitle }}
         </router-link>
@@ -83,10 +84,9 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Header from '../components/Header.vue'
 import { DIRECTUS_URL, assetUrl, preloadImage } from '../utils/directus.js'
-import { scrambleElementText } from '../utils/textScramble.js'
 
 const DEFAULT_TITLE = 'Студия светового дизайна\nМацнева Николая'
 const DEFAULT_FIXTURES = ['Болларды', 'Ступени', 'Забор', 'Деревья/кусты', 'Фасадные', 'Линейные']
@@ -95,8 +95,8 @@ const DEFAULT_PLACEHOLDER_COLOR = '#171821'
 const GLYPHS = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ0123456789_*?@#$%+=-'
 
 const [targetTitleLine1, targetTitleLine2] = DEFAULT_TITLE.split('\n')
-const titleLine1 = ref('')
-const titleLine2 = ref('')
+const titleLine1 = ref(targetTitleLine1)
+const titleLine2 = ref(targetTitleLine2)
 const fixtureOptions = ref(DEFAULT_FIXTURES)
 const temperatureOptions = ref(DEFAULT_TEMPERATURES)
 const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
@@ -104,33 +104,31 @@ const sceneImages = ref([])
 const displayedImageUrl = ref('')
 const serviceItems = ref([])
 const isIndexReady = ref(false)
-const serviceListRef = ref(null)
 const selectedFixtures = ref([])
 const selectedTemperature = ref(DEFAULT_TEMPERATURES[0])
 const abortController = new AbortController()
 const scrambleTimeouts = []
 const scrambleIntervals = []
-const animationCleanups = []
 let imageLoadRequest = 0
 
-const runScramble = (targetText, reactiveRef, delay = 0) => {
+const runScramble = (targetText, updateText, delay = 0) => {
   const timeout = window.setTimeout(() => {
     let iterations = 0
     const maxIterations = targetText.length + 4
     const interval = window.setInterval(() => {
-      reactiveRef.value = targetText
+      updateText(targetText
         .split('')
         .map((char, index) => {
           if (char === ' ') return ' '
           if (index < iterations - 3) return char
           return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
         })
-        .join('')
+        .join(''))
 
       iterations += 1
       if (iterations >= maxIterations) {
         window.clearInterval(interval)
-        reactiveRef.value = targetText
+        updateText(targetText)
       }
     }, 55)
 
@@ -294,19 +292,16 @@ const loadServices = async () => {
       ? data.service_items
         .map((service) => {
           const title = String(service?.title || '').trim()
-          return { title, navigationTitle: title === 'Аудит световой среды' ? 'Аудит' : title }
+          const navigationTitle = title === 'Аудит световой среды' ? 'Аудит' : title
+          return { title, navigationTitle, scrambleTitle: navigationTitle }
         })
         .filter((service) => service.title)
       : []
 
-    await nextTick()
-    const serviceLinks = serviceListRef.value?.querySelectorAll('a') || []
-    serviceLinks.forEach((element, index) => {
-      animationCleanups.push(scrambleElementText(element, {
-        delay: 120 + index * 55,
-        duration: 420,
-        frameDuration: 35,
-      }))
+    serviceItems.value.forEach((service, index) => {
+      runScramble(service.navigationTitle, (value) => {
+        service.scrambleTitle = value
+      }, 120 + index * 55)
     })
   } catch (error) {
     if (error.name !== 'AbortError') console.error('Не удалось загрузить список услуг из Directus:', error)
@@ -317,8 +312,8 @@ onMounted(() => {
   document.documentElement.classList.add('reference-root-active')
   const homepagePromise = loadHomepage()
   const servicesPromise = loadServices()
-  runScramble(targetTitleLine1, titleLine1, 150)
-  runScramble(targetTitleLine2, titleLine2, 450)
+  runScramble(targetTitleLine1, (value) => { titleLine1.value = value }, 150)
+  runScramble(targetTitleLine2, (value) => { titleLine2.value = value }, 450)
 
   Promise.allSettled([homepagePromise, servicesPromise]).then(() => {
     const timeout = window.setTimeout(() => {
@@ -332,7 +327,6 @@ onUnmounted(() => {
   abortController.abort()
   scrambleTimeouts.forEach((timeout) => window.clearTimeout(timeout))
   scrambleIntervals.forEach((interval) => window.clearInterval(interval))
-  animationCleanups.forEach((cleanup) => cleanup())
   document.documentElement.classList.remove('reference-root-active')
 })
 </script>
@@ -382,7 +376,19 @@ onUnmounted(() => {
 }
 
 .scramble-line {
+  position: relative;
+  display: inline-block;
+  color: transparent;
   white-space: nowrap;
+}
+
+.scramble-line::after,
+.hero-list a::after {
+  position: absolute;
+  inset: 0;
+  display: block;
+  color: #fff;
+  content: attr(data-scramble-text);
 }
 
 .hero-list {
@@ -393,9 +399,10 @@ onUnmounted(() => {
 }
 
 .hero-list a {
+  position: relative;
   width: fit-content;
   max-width: 100%;
-  color: inherit;
+  color: transparent;
   font-size: 1.8vw;
   line-height: 1.02;
   text-decoration: none;
