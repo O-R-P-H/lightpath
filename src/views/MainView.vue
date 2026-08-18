@@ -65,16 +65,13 @@
       </aside>
 
       <div class="scene-frame" :style="{ backgroundColor: placeholderColor }">
-        <Transition name="scene-fade">
-          <img
-            v-if="displayedImageUrl"
-            :key="displayedImageUrl"
-            class="scene-image"
-            :src="displayedImageUrl"
-            :alt="`${currentSceneLabel} — ${selectedTemperature}`"
-          />
-          <div v-else key="placeholder" class="solid-placeholder" aria-hidden="true"></div>
-        </Transition>
+        <img
+          v-if="displayedImageUrl"
+          class="scene-image"
+          :src="displayedImageUrl"
+          :alt="`${currentSceneLabel} — ${selectedTemperature}`"
+        />
+        <div v-else class="solid-placeholder" aria-hidden="true"></div>
         <span class="visually-hidden" aria-live="polite">
           {{ currentImageUrl ? `${currentSceneLabel}, ${selectedTemperature}` : 'Изображение для выбранной комбинации пока не добавлено' }}
         </span>
@@ -154,6 +151,7 @@ const displayImageWhenReady = async (url) => {
     const loadedUrl = await preloadImage(url, assetUrl(currentImage.value?.image))
     if (requestId !== imageLoadRequest) return
     displayedImageUrl.value = loadedUrl
+    preloadAdjacentScenes()
   } catch (error) {
     if (requestId === imageLoadRequest) console.error('Не удалось загрузить изображение главной:', error)
   }
@@ -210,6 +208,15 @@ const preloadFixture = (fixture) => {
 
 const preloadTemperature = (temperature) => {
   preloadScene(selectedFixtures.value, temperature)
+}
+
+const preloadAdjacentScenes = () => {
+  fixtureOptions.value.forEach((fixture) => {
+    const fixtures = selectedFixtures.value.includes(fixture)
+      ? selectedFixtures.value.filter((item) => item !== fixture)
+      : fixtureOptions.value.filter((item) => item === fixture || selectedFixtures.value.includes(item))
+    preloadScene(fixtures, selectedTemperature.value)
+  })
 }
 
 const loadHomepage = async () => {
@@ -474,20 +481,6 @@ onUnmounted(() => {
   border: 0;
 }
 
-.scene-fade-enter-active,
-.scene-fade-leave-active {
-  transition: opacity .35s ease;
-}
-
-.scene-fade-leave-active {
-  position: absolute;
-}
-
-.scene-fade-enter-from,
-.scene-fade-leave-to {
-  opacity: 0;
-}
-
 @media (hover: hover) {
   .hero-list a:hover {
     opacity: .56;
@@ -664,8 +657,6 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene-fade-enter-active,
-  .scene-fade-leave-active,
   .link > span,
   .filter-button {
     transition: none;
