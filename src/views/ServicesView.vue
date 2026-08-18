@@ -200,7 +200,7 @@ onUnmounted(() => {
 .service-detail-price p { color: #f1f1f0; font-size: 1.25vw; line-height: 1.35; }
 .service-navigation { align-self: start; border-top: 1px solid var(--color-line); }
 .service-navigation-item { display: grid; grid-template-columns: minmax(2.08vw, .28fr) minmax(0, 1fr); gap: .625vw; align-items: center; width: 100%; min-height: 3.7vw; padding: .52vw 0; border: 0; border-bottom: 1px solid var(--color-line); color: rgba(241, 241, 240, .58); background: transparent; font: inherit; font-size: 1.35vw; font-weight: 300; line-height: 1.04; letter-spacing: -.035em; text-align: left; cursor: pointer; transition: color .25s ease, padding-left .25s ease; }
-.service-navigation-icon { display: grid; width: clamp(16px, 1.05vw, 28px); aspect-ratio: 1; place-items: center; opacity: .48; transition: opacity .25s ease, transform .25s ease; }
+.service-navigation-icon { display: grid; width: clamp(18px, 1.25vw, 32px); aspect-ratio: 1; place-items: center; opacity: .48; transition: opacity .25s ease, transform .25s ease; }
 .service-navigation-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .service-navigation-item.active, .service-navigation-item:hover { padding-left: .12em; color: #fff; }
 .service-navigation-item.active .service-navigation-icon, .service-navigation-item:hover .service-navigation-icon { opacity: 1; transform: scale(1.06); }
