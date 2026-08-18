@@ -48,7 +48,10 @@
             <div class="services-accordion">
               <article v-for="(service, index) in serviceItems" :id="`service-mobile-${String(index + 1).padStart(2, '0')}`" :key="`${service.title}-${index}`" class="accordion-item" :class="{ open: openMobileIndex === index }">
                 <button class="accordion-trigger" type="button" :aria-expanded="openMobileIndex === index" :aria-controls="`service-mobile-panel-${index}`" @click="toggleMobileService(index)">
-                  <span>{{ String(index + 1).padStart(2, '0') }}</span><span>{{ navigationTitle(service.title) }}</span><span aria-hidden="true">{{ openMobileIndex === index ? '−' : '+' }}</span>
+                  <span class="accordion-icon" aria-hidden="true"><img :src="serviceIcons[index] || serviceIcons[serviceIcons.length - 1]" alt="" /></span>
+                  <span class="visually-hidden">{{ String(index + 1).padStart(2, '0') }}.</span>
+                  <span>{{ navigationTitle(service.title) }}</span>
+                  <span class="accordion-toggle" aria-hidden="true">{{ openMobileIndex === index ? '−' : '+' }}</span>
                 </button>
                 <div v-show="openMobileIndex === index" :id="`service-mobile-panel-${index}`" class="accordion-panel">
                   <p v-if="service.duration" class="accordion-duration">Срок предоставления услуги · {{ service.duration }}</p>
@@ -221,9 +224,11 @@ onUnmounted(() => {
   .services-workspace { display: none; }
   .services-accordion { display: block; border-top: 1px solid var(--color-line); }
   .accordion-item { border-bottom: 1px solid var(--color-line); }
-  .accordion-trigger { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; width: 100%; padding: 17px 0 16px; border: 0; color: #f1f1f0; background: transparent; font: inherit; font-size: clamp(23px, 6.8vw, 32px); font-weight: 300; line-height: 1; letter-spacing: -.045em; text-align: left; }
-  .accordion-trigger > span:first-child, .accordion-trigger > span:last-child { color: rgba(241, 241, 240, .5); font-size: .48em; }
-  .accordion-trigger > span:last-child { font-size: 1em; line-height: .7; }
+  .accordion-trigger { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; padding: 17px 0 16px; border: 0; color: #f1f1f0; background: transparent; font: inherit; font-size: clamp(23px, 6.8vw, 32px); font-weight: 300; line-height: 1; letter-spacing: -.045em; text-align: left; }
+  .accordion-icon { display: grid; width: 26px; height: 26px; place-items: center; opacity: .54; transition: opacity .25s ease, transform .25s ease; }
+  .accordion-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .accordion-item.open .accordion-icon { opacity: 1; transform: scale(1.06); }
+  .accordion-toggle { color: rgba(241, 241, 240, .5); font-size: 1em; line-height: .7; }
   .accordion-panel { padding: 5px 0 24px 44px; }
   .accordion-panel > p { margin: 0; color: rgba(241, 241, 240, .78); font-size: 16px; font-weight: 300; line-height: 1.48; letter-spacing: 0; word-spacing: .06em; white-space: pre-line; }
   .accordion-duration { margin-bottom: 22px !important; color: rgba(241, 241, 240, .52) !important; font-size: 12px !important; letter-spacing: .04em !important; text-transform: uppercase; }
