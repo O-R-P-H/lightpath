@@ -11,7 +11,14 @@
         <div v-if="!loading && !error" class="services-content">
           <template v-if="serviceItems.length">
             <div class="services-workspace">
-              <article v-if="selectedService" :id="`service-${String(selectedIndex + 1).padStart(2, '0')}`" class="service-detail">
+              <article
+                v-if="selectedService"
+                :id="`service-${String(selectedIndex + 1).padStart(2, '0')}`"
+                ref="serviceDetailRef"
+                class="service-detail"
+                @pointerenter.once="animateCurrentService"
+                @focusin.once="animateCurrentService"
+              >
                 <div class="service-detail-meta">
                   <span>{{ String(selectedIndex + 1).padStart(2, '0') }}</span>
                   <span v-if="selectedService.duration">Срок предоставления услуги · {{ selectedService.duration }}</span>
@@ -70,13 +77,17 @@ import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
 import { DIRECTUS_URL } from '../utils/directus'
 import { applyRouteSeo, SITE_NAME, SITE_URL } from '../utils/seo'
+import { scrambleElementText } from '../utils/textScramble'
 
 const rawServiceItems = ref([])
 const loading = ref(true)
 const error = ref(false)
 const selectedIndex = ref(0)
 const openMobileIndex = ref(null)
+const serviceDetailRef = ref(null)
 const route = useRoute()
+let desktopAnimationCleanup = () => {}
+let mobileAnimationCleanup = () => {}
 const cleanText = (value) => typeof value === 'string' ? value.trim() : ''
 
 const serviceItems = computed(() => Array.isArray(rawServiceItems.value)
@@ -86,8 +97,39 @@ const serviceItems = computed(() => Array.isArray(rawServiceItems.value)
   : [])
 const selectedService = computed(() => serviceItems.value[selectedIndex.value] || null)
 const navigationTitle = (title) => title === 'Аудит световой среды' ? 'Аудит' : title
-const selectService = (index) => { selectedIndex.value = index }
-const toggleMobileService = (index) => { openMobileIndex.value = openMobileIndex.value === index ? null : index }
+
+const animateCurrentService = () => {
+  desktopAnimationCleanup()
+  desktopAnimationCleanup = scrambleElementText(serviceDetailRef.value, {
+    delay: 40,
+    duration: 760,
+    stagger: 48,
+    frameDuration: 40,
+  })
+}
+
+const selectService = async (index) => {
+  desktopAnimationCleanup()
+  selectedIndex.value = index
+  await nextTick()
+  animateCurrentService()
+}
+
+const toggleMobileService = async (index) => {
+  mobileAnimationCleanup()
+  const isOpening = openMobileIndex.value !== index
+  openMobileIndex.value = isOpening ? index : null
+  if (!isOpening) return
+
+  await nextTick()
+  const card = document.getElementById(`service-mobile-${String(index + 1).padStart(2, '0')}`)
+  mobileAnimationCleanup = scrambleElementText(card, {
+    delay: 30,
+    duration: 720,
+    stagger: 45,
+    frameDuration: 40,
+  })
+}
 
 const selectFromHash = () => {
   const match = route.hash.match(/^#service-(\d+)$/)
@@ -133,7 +175,11 @@ const fetchServicesData = async () => {
 }
 
 onMounted(() => { document.documentElement.classList.add('reference-root-active'); fetchServicesData() })
-onUnmounted(() => { document.documentElement.classList.remove('reference-root-active') })
+onUnmounted(() => {
+  desktopAnimationCleanup()
+  mobileAnimationCleanup()
+  document.documentElement.classList.remove('reference-root-active')
+})
 </script>
 
 <style scoped>

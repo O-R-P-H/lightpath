@@ -47,12 +47,14 @@ export const scrambleElementText = (root, options = {}) => {
   }
 
   const textNodes = collectTextNodes(root)
+  const originals = new Map()
   const timeouts = []
   const intervals = []
   let cancelled = false
 
   textNodes.forEach((node, nodeIndex) => {
     const originalText = node.nodeValue
+    originals.set(node, originalText)
     const characters = Array.from(originalText)
     const mutableCount = characters.filter((character) => !STATIC_CHARACTER.test(character)).length
 
@@ -87,5 +89,8 @@ export const scrambleElementText = (root, options = {}) => {
     cancelled = true
     timeouts.forEach((timeout) => window.clearTimeout(timeout))
     intervals.forEach((interval) => window.clearInterval(interval))
+    originals.forEach((originalText, node) => {
+      if (node.isConnected) node.nodeValue = originalText
+    })
   }
 }
