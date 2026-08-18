@@ -69,6 +69,7 @@ import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
 import { DIRECTUS_URL } from '../utils/directus'
+import { applyRouteSeo, SITE_NAME, SITE_URL } from '../utils/seo'
 
 const rawServiceItems = ref([])
 const loading = ref(true)
@@ -104,6 +105,25 @@ const fetchServicesData = async () => {
     if (!response.ok) throw new Error(`CMS returned ${response.status}`)
     const { data } = await response.json()
     rawServiceItems.value = data?.service_items || []
+    applyRouteSeo(route, {
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'Услуги студии светового дизайна Мацнева Николая',
+        url: `${SITE_URL}/gallery`,
+        itemListElement: serviceItems.value.map((service, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'Service',
+            name: service.title,
+            description: service.description || undefined,
+            provider: { '@type': 'ProfessionalService', name: SITE_NAME, url: SITE_URL },
+            url: `${SITE_URL}/gallery#service-${String(index + 1).padStart(2, '0')}`,
+          },
+        })),
+      },
+    })
     await nextTick()
     selectFromHash()
   } catch (err) {

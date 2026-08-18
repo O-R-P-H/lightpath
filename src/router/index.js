@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { applyRouteSeo } from '../utils/seo'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +17,10 @@ const router = createRouter({
     { path: '/contacts', name: 'contacts', component: () => import('../views/ContactsView.vue') },
     { path: '/gallery', name: 'services', component: () => import('../views/ServicesView.vue') },
   ],
+})
+
+router.afterEach((to) => {
+  applyRouteSeo(to)
 })
 
 export default router

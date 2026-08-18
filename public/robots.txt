@@ -1,0 +1,10 @@
+User-agent: YandexAdditional
+Allow: /
+
+User-agent: YandexAdditionalBot
+Allow: /
+
+User-agent: *
+Allow: /
+
+Sitemap: https://nikolaym.online/sitemap.xml

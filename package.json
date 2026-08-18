@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "geo:generate": "node scripts/generate-geo.mjs",
+    "prebuild": "npm run geo:generate",
     "build": "vite build",
     "preview": "vite preview"
   },

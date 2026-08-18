@@ -110,6 +110,7 @@ import BrandLink from '../components/BrandLink.vue'
 import ProjectOrderModal from '../components/ProjectOrderModal.vue'
 import { sanitizeHtml } from '../utils/sanitize'
 import { DIRECTUS_URL, assetUrl, fallbackToOriginalAsset, resolveFile } from '../utils/directus'
+import { applyRouteSeo, SITE_NAME, SITE_URL, textDescription } from '../utils/seo'
 
 const route = useRoute()
 const project = ref(null)
@@ -146,6 +147,41 @@ const fetchProjectDetails = async () => {
       throw new Error('CMS returned no project data')
     }
     project.value = data
+
+    const projectUrl = `${SITE_URL}/projects/${data.id}`
+    const projectTitle = String(data.title || '').replace(/\s+/g, ' ').trim()
+    const previewUrl = data.preview ? assetUrl(data.preview, { width: 1600, quality: 86, fit: 'inside' }) : ''
+    const projectDescription = textDescription(data.content, `Проект освещения «${projectTitle}» студии Николая Мацнева.`)
+    const creativeWork = {
+      '@type': 'CreativeWork',
+      '@id': `${projectUrl}#project`,
+      name: projectTitle,
+      description: projectDescription,
+      url: projectUrl,
+      creator: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+    }
+    if (data.year) creativeWork.dateCreated = String(data.year)
+    if (previewUrl) creativeWork.image = previewUrl
+    applyRouteSeo(route, {
+      title: `${projectTitle} — ${SITE_NAME}`,
+      description: projectDescription,
+      image: previewUrl || undefined,
+      type: 'article',
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@graph': [
+          creativeWork,
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Главная', item: `${SITE_URL}/` },
+              { '@type': 'ListItem', position: 2, name: 'Проекты', item: `${SITE_URL}/projects` },
+              { '@type': 'ListItem', position: 3, name: projectTitle, item: projectUrl },
+            ],
+          },
+        ],
+      },
+    })
 
       // Галерея поддерживает изображения и видео из стандартного файлового поля Directus.
       const media = []
