@@ -1,5 +1,5 @@
 <template>
-  <div class="hero-wrapper">
+  <div class="hero-wrapper" :data-index-ready="isIndexReady ? 'true' : 'false'">
     <Header />
 
     <header class="hero-header">
@@ -103,6 +103,7 @@ const placeholderColor = ref(DEFAULT_PLACEHOLDER_COLOR)
 const sceneImages = ref([])
 const displayedImageUrl = ref('')
 const serviceItems = ref([])
+const isIndexReady = ref(false)
 const serviceListRef = ref(null)
 const selectedFixtures = ref([])
 const selectedTemperature = ref(DEFAULT_TEMPERATURES[0])
@@ -314,10 +315,17 @@ const loadServices = async () => {
 
 onMounted(() => {
   document.documentElement.classList.add('reference-root-active')
-  loadHomepage()
-  loadServices()
+  const homepagePromise = loadHomepage()
+  const servicesPromise = loadServices()
   runScramble(targetTitleLine1, titleLine1, 150)
   runScramble(targetTitleLine2, titleLine2, 450)
+
+  Promise.allSettled([homepagePromise, servicesPromise]).then(() => {
+    const timeout = window.setTimeout(() => {
+      isIndexReady.value = true
+    }, 2200)
+    scrambleTimeouts.push(timeout)
+  })
 })
 
 onUnmounted(() => {

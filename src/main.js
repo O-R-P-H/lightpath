@@ -9,7 +9,7 @@ app.use(router)
 app.mount('#app')
 
 const rotorSelectors = {
-  home: '.hero-list a',
+  home: '.hero-wrapper[data-index-ready="true"]',
   about: '.text-container',
   'projects-archive': '.project-row',
   'projects-archive-legacy': '.project-row',
@@ -27,12 +27,13 @@ const waitForRenderedContent = (routeName) => {
   window.YandexRotorSettings.IsLoaded = false
   window.YandexRotorSettings.IsError = false
   const selector = rotorSelectors[routeName]
+  const maxAttempts = routeName === 'home' ? 75 : 40
   let attempts = 0
   rotorTimer = window.setInterval(() => {
     attempts += 1
     const element = selector ? document.querySelector(selector) : document.querySelector('#app')
     const hasContent = element && element.textContent.trim().length > 0
-    if (hasContent || attempts >= 40) {
+    if (hasContent || attempts >= maxAttempts) {
       window.YandexRotorSettings.IsLoaded = true
       window.clearInterval(rotorTimer)
     }
