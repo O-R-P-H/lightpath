@@ -14,24 +14,23 @@
               <article
                 v-if="selectedService"
                 :id="`service-${String(selectedIndex + 1).padStart(2, '0')}`"
-                ref="serviceDetailRef"
                 class="service-detail"
-                @pointerenter.once="animateCurrentService"
-                @focusin.once="animateCurrentService"
               >
                 <div class="service-detail-meta">
-                  <span>{{ String(selectedIndex + 1).padStart(2, '0') }}</span>
-                  <span v-if="selectedService.duration">Срок предоставления услуги · {{ selectedService.duration }}</span>
+                  <ScrambleText as="span" :text="String(selectedIndex + 1).padStart(2, '0')" :animation-key="selectedIndex" :duration="420" />
+                  <ScrambleText v-if="selectedService.duration" as="span" :text="`Срок предоставления услуги · ${selectedService.duration}`" :animation-key="selectedIndex" :delay="35" :duration="520" />
                 </div>
                 <div class="service-detail-copy">
-                  <h1>{{ selectedService.title }}</h1>
-                  <p v-if="selectedService.description">{{ selectedService.description }}</p>
+                  <ScrambleText as="h1" :text="selectedService.title" :animation-key="selectedIndex" :delay="70" :duration="620" />
+                  <ScrambleText v-if="selectedService.description" as="p" :text="selectedService.description" :animation-key="selectedIndex" :delay="105" :duration="700" />
                 </div>
                 <div v-if="selectedService.includes" class="service-detail-row">
-                  <span>Что входит</span><p>{{ selectedService.includes }}</p>
+                  <ScrambleText as="span" text="Что входит" :animation-key="selectedIndex" :delay="140" :duration="420" />
+                  <ScrambleText as="p" :text="selectedService.includes" :animation-key="selectedIndex" :delay="175" :duration="700" />
                 </div>
                 <div class="service-detail-row service-detail-price">
-                  <span>Стоимость</span><p>{{ selectedService.price || 'По запросу' }}</p>
+                  <ScrambleText as="span" text="Стоимость" :animation-key="selectedIndex" :delay="210" :duration="420" />
+                  <ScrambleText as="p" :text="selectedService.price || 'По запросу'" :animation-key="selectedIndex" :delay="245" :duration="520" />
                 </div>
               </article>
 
@@ -75,6 +74,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/Header.vue'
 import BrandLink from '../components/BrandLink.vue'
+import ScrambleText from '../components/ScrambleText.vue'
 import { DIRECTUS_URL } from '../utils/directus'
 import { applyRouteSeo, SITE_NAME, SITE_URL } from '../utils/seo'
 import { scrambleElementText } from '../utils/textScramble'
@@ -84,9 +84,7 @@ const loading = ref(true)
 const error = ref(false)
 const selectedIndex = ref(0)
 const openMobileIndex = ref(null)
-const serviceDetailRef = ref(null)
 const route = useRoute()
-let desktopAnimationCleanup = () => {}
 let mobileAnimationCleanup = () => {}
 const cleanText = (value) => typeof value === 'string' ? value.trim() : ''
 
@@ -98,21 +96,8 @@ const serviceItems = computed(() => Array.isArray(rawServiceItems.value)
 const selectedService = computed(() => serviceItems.value[selectedIndex.value] || null)
 const navigationTitle = (title) => title === 'Аудит световой среды' ? 'Аудит' : title
 
-const animateCurrentService = () => {
-  desktopAnimationCleanup()
-  desktopAnimationCleanup = scrambleElementText(serviceDetailRef.value, {
-    delay: 40,
-    duration: 760,
-    stagger: 48,
-    frameDuration: 40,
-  })
-}
-
-const selectService = async (index) => {
-  desktopAnimationCleanup()
+const selectService = (index) => {
   selectedIndex.value = index
-  await nextTick()
-  animateCurrentService()
 }
 
 const toggleMobileService = async (index) => {
@@ -124,7 +109,7 @@ const toggleMobileService = async (index) => {
   await nextTick()
   const card = document.getElementById(`service-mobile-${String(index + 1).padStart(2, '0')}`)
   mobileAnimationCleanup = scrambleElementText(card, {
-    delay: 30,
+    delay: 0,
     duration: 720,
     stagger: 45,
     frameDuration: 40,
@@ -176,7 +161,6 @@ const fetchServicesData = async () => {
 
 onMounted(() => { document.documentElement.classList.add('reference-root-active'); fetchServicesData() })
 onUnmounted(() => {
-  desktopAnimationCleanup()
   mobileAnimationCleanup()
   document.documentElement.classList.remove('reference-root-active')
 })

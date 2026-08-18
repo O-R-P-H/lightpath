@@ -32,6 +32,69 @@ const renderFrame = (characters, revealCount) => {
   }).join('')
 }
 
+export const scrambleTextValue = (value, update, options = {}) => {
+  const targetText = String(value ?? '')
+  const {
+    delay = 0,
+    duration = 850,
+    frameDuration = 45,
+    onComplete = () => {},
+  } = options
+
+  update(targetText)
+
+  if (
+    typeof window === 'undefined'
+    || !targetText
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    onComplete()
+    return () => {}
+  }
+
+  const characters = Array.from(targetText)
+  const mutableCount = characters.filter((character) => !STATIC_CHARACTER.test(character)).length
+  let timeout = 0
+  let interval = 0
+  let cancelled = false
+
+  if (!mutableCount) {
+    onComplete()
+    return () => {}
+  }
+
+  const finish = () => {
+    if (cancelled) return
+    window.clearInterval(interval)
+    update(targetText)
+    onComplete()
+  }
+
+  const start = () => {
+    if (cancelled) return
+    update(renderFrame(characters, 0))
+
+    const totalFrames = Math.max(1, Math.ceil(duration / frameDuration))
+    let frame = 0
+    interval = window.setInterval(() => {
+      frame += 1
+      const revealCount = Math.ceil((frame / totalFrames) * mutableCount)
+      update(renderFrame(characters, revealCount))
+      if (frame >= totalFrames) finish()
+    }, frameDuration)
+  }
+
+  if (delay > 0) timeout = window.setTimeout(start, delay)
+  else start()
+
+  return () => {
+    cancelled = true
+    window.clearTimeout(timeout)
+    window.clearInterval(interval)
+    update(targetText)
+  }
+}
+
 export const scrambleElementText = (root, options = {}) => {
   if (!root || typeof window === 'undefined') return () => {}
 
