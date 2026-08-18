@@ -36,7 +36,10 @@
 
               <nav class="service-navigation" aria-label="Список услуг">
                 <button v-for="(service, index) in serviceItems" :key="`${service.title}-${index}`" class="service-navigation-item" :class="{ active: selectedIndex === index }" type="button" :aria-current="selectedIndex === index ? 'true' : undefined" @click="selectService(index)">
-                  <span class="service-navigation-number">{{ String(index + 1).padStart(2, '0') }}</span>
+                  <span class="service-navigation-icon" aria-hidden="true">
+                    <img :src="serviceIcons[index] || serviceIcons[serviceIcons.length - 1]" alt="" />
+                  </span>
+                  <span class="visually-hidden">{{ String(index + 1).padStart(2, '0') }}.</span>
                   <span>{{ navigationTitle(service.title) }}</span>
                 </button>
               </nav>
@@ -86,6 +89,16 @@ const selectedIndex = ref(0)
 const openMobileIndex = ref(null)
 const route = useRoute()
 let mobileAnimationCleanup = () => {}
+const serviceIcons = [
+  '/icons/services/audit.svg',
+  '/icons/services/consultation.svg',
+  '/icons/services/concept.svg',
+  '/icons/services/lighting-project.svg',
+  '/icons/services/procurement.svg',
+  '/icons/services/delivery.svg',
+  '/icons/services/installation.svg',
+  '/icons/services/realization.svg',
+]
 const cleanText = (value) => typeof value === 'string' ? value.trim() : ''
 
 const serviceItems = computed(() => Array.isArray(rawServiceItems.value)
@@ -186,9 +199,12 @@ onUnmounted(() => {
 .service-detail-price { margin-top: auto; padding-bottom: 0; }
 .service-detail-price p { color: #f1f1f0; font-size: 1.25vw; line-height: 1.35; }
 .service-navigation { align-self: start; border-top: 1px solid var(--color-line); }
-.service-navigation-item { display: grid; grid-template-columns: minmax(2.08vw, .28fr) minmax(0, 1fr); gap: .625vw; width: 100%; min-height: 3.7vw; padding: .52vw 0; border: 0; border-bottom: 1px solid var(--color-line); color: rgba(241, 241, 240, .58); background: transparent; font: inherit; font-size: 1.35vw; font-weight: 300; line-height: 1.04; letter-spacing: -.035em; text-align: left; cursor: pointer; transition: color .25s ease, padding-left .25s ease; }
-.service-navigation-number { color: rgba(241, 241, 240, .42); font-size: .4em; letter-spacing: .04em; }
+.service-navigation-item { display: grid; grid-template-columns: minmax(2.08vw, .28fr) minmax(0, 1fr); gap: .625vw; align-items: center; width: 100%; min-height: 3.7vw; padding: .52vw 0; border: 0; border-bottom: 1px solid var(--color-line); color: rgba(241, 241, 240, .58); background: transparent; font: inherit; font-size: 1.35vw; font-weight: 300; line-height: 1.04; letter-spacing: -.035em; text-align: left; cursor: pointer; transition: color .25s ease, padding-left .25s ease; }
+.service-navigation-icon { display: grid; width: clamp(16px, 1.05vw, 28px); aspect-ratio: 1; place-items: center; opacity: .48; transition: opacity .25s ease, transform .25s ease; }
+.service-navigation-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .service-navigation-item.active, .service-navigation-item:hover { padding-left: .12em; color: #fff; }
+.service-navigation-item.active .service-navigation-icon, .service-navigation-item:hover .service-navigation-icon { opacity: 1; transform: scale(1.06); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .services-accordion { display: none; }
 .services-empty { padding: 6vw 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); font-size: 2vw; font-weight: 300; opacity: .58; }
 .services-cta { display: grid; grid-template-columns: minmax(6.25vw, .62fr) minmax(0, 2.15fr) auto; gap: 4vw; align-items: end; margin-top: 10vw; padding: 4vw 0 6vw; border-top: 1px solid var(--color-line); color: inherit; text-decoration: none; }
