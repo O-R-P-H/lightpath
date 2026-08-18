@@ -70,6 +70,8 @@
           class="scene-image"
           :src="displayedImageUrl"
           :alt="`${currentSceneLabel} — ${selectedTemperature}`"
+          decoding="sync"
+          draggable="false"
         />
         <div v-else class="solid-placeholder" aria-hidden="true"></div>
         <span class="visually-hidden" aria-live="polite">
@@ -108,6 +110,7 @@ const selectedTemperature = ref(DEFAULT_TEMPERATURES[0])
 const abortController = new AbortController()
 let indexReadyTimeout = 0
 let imageLoadRequest = 0
+let imageSwitchTimeout = 0
 
 const fixtureGroupKey = (value) => {
   const fixtures = new Set((Array.isArray(value) ? value : String(value || '').split(/\s*\+\s*/))
@@ -140,8 +143,8 @@ const imageAssetUrl = (image) => assetUrl(image, {
 
 const currentImageUrl = computed(() => imageAssetUrl(currentImage.value?.image))
 
-const displayImageWhenReady = async (url) => {
-  const requestId = ++imageLoadRequest
+const displayImageWhenReady = async (url, requestId) => {
+  if (requestId !== imageLoadRequest) return
   if (!url) {
     displayedImageUrl.value = ''
     return
@@ -157,7 +160,15 @@ const displayImageWhenReady = async (url) => {
   }
 }
 
-watch(currentImageUrl, displayImageWhenReady)
+const queueImageSwitch = (url) => {
+  const requestId = ++imageLoadRequest
+  window.clearTimeout(imageSwitchTimeout)
+  imageSwitchTimeout = window.setTimeout(() => {
+    displayImageWhenReady(url, requestId)
+  }, 90)
+}
+
+watch(currentImageUrl, queueImageSwitch)
 
 const parseOptions = (value, fallback) => {
   const options = String(value || '')
@@ -252,7 +263,7 @@ const loadHomepage = async () => {
         .filter((item) => item.image && item.temperatureFilter)
       : []
 
-    await displayImageWhenReady(currentImageUrl.value)
+    queueImageSwitch(currentImageUrl.value)
   } catch (error) {
     if (error.name !== 'AbortError') {
       console.error('Не удалось загрузить главную страницу из Directus:', error)
@@ -297,6 +308,8 @@ onMounted(() => {
 onUnmounted(() => {
   abortController.abort()
   window.clearTimeout(indexReadyTimeout)
+  window.clearTimeout(imageSwitchTimeout)
+  imageLoadRequest += 1
   document.documentElement.classList.remove('reference-root-active')
 })
 </script>

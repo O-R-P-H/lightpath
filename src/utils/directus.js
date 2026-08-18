@@ -55,7 +55,10 @@ const loadImage = (url) => new Promise((resolve, reject) => {
 
   const image = new Image()
   image.decoding = 'async'
-  image.onload = () => resolve(url)
+  image.onload = () => {
+    const decode = typeof image.decode === 'function' ? image.decode() : Promise.resolve()
+    decode.catch(() => {}).then(() => resolve(url))
+  }
   image.onerror = () => reject(new Error(`Failed to preload image: ${url}`))
   image.src = url
 })
