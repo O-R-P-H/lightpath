@@ -83,6 +83,7 @@ const warmProjectPreviews = async (projects) => {
 }
 
 const year = computed(() => route.params.year)
+const sourceProjectId = computed(() => String(route.query.project || ''))
 
 const fetchProjects = async () => {
   try {
@@ -96,7 +97,10 @@ const fetchProjects = async () => {
   } finally {
     loading.value = false
     if (yearProjects.value.length > 0) {
-      handleMouseEnter(yearProjects.value[0])
+      const sourceProject = yearProjects.value.find(
+        project => String(project.id) === sourceProjectId.value,
+      )
+      handleMouseEnter(sourceProject || yearProjects.value[0])
     }
   }
 }
