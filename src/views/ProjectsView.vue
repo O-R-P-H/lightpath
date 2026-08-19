@@ -38,8 +38,8 @@
                 class="project-row"
                 @mouseenter="handleMouseEnter(project, $event)"
             >
-              <!-- Название открывает проект, год — архив проектов за этот год. -->
-              <a :href="`/projects/${project.id}`" class="project-title-link">
+              <!-- Для датированных проектов название открывает архив года, иначе — сам проект. -->
+              <a :href="project.year ? `/projects/year/${project.year}` : `/projects/${project.id}`" class="project-title-link">
                 <span>{{ project.title }}</span>
               </a>
 
