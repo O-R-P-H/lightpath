@@ -383,7 +383,7 @@ onUnmounted(() => {
 .scene-explorer {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 40.5vw) minmax(0, 24vw);
+  grid-template-columns: minmax(0, 51.25vw) minmax(0, 12vw);
   grid-template-rows: auto auto;
   column-gap: 1vw;
   align-content: end;
