@@ -381,13 +381,14 @@ onUnmounted(() => {
 }
 
 .scene-explorer {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(0, 40.5vw) minmax(0, 24vw);
   grid-template-rows: auto auto;
   column-gap: 1vw;
   align-content: end;
   min-height: 100vh;
-  padding: 16vh 0 3vh 3vw;
+  padding: 16vh 0 10vh 3vw;
 }
 
 .scene-frame {
