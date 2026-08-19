@@ -20,6 +20,13 @@
                   <ScrambleText as="span" :text="String(selectedIndex + 1).padStart(2, '0')" :animation-key="selectedIndex" :duration="420" />
                   <ScrambleText v-if="selectedService.duration" as="span" :text="`Срок предоставления услуги · ${selectedService.duration}`" :animation-key="selectedIndex" :delay="35" :duration="520" />
                 </div>
+                <img
+                  :key="serviceIcons[selectedIndex]"
+                  class="service-detail-icon"
+                  :src="serviceIcons[selectedIndex] || serviceIcons[serviceIcons.length - 1]"
+                  alt=""
+                  aria-hidden="true"
+                />
                 <div class="service-detail-copy">
                   <ScrambleText as="h1" :text="selectedService.title" :animation-key="selectedIndex" :delay="70" :duration="620" />
                   <ScrambleText v-if="selectedService.description" as="p" :text="selectedService.description" :animation-key="selectedIndex" :delay="105" :duration="700" />
@@ -36,10 +43,7 @@
 
               <nav class="service-navigation" aria-label="Список услуг">
                 <button v-for="(service, index) in serviceItems" :key="`${service.title}-${index}`" class="service-navigation-item" :class="{ active: selectedIndex === index }" type="button" :aria-current="selectedIndex === index ? 'true' : undefined" @click="selectService(index)">
-                  <span class="service-navigation-icon" aria-hidden="true">
-                    <img :src="serviceIcons[index] || serviceIcons[serviceIcons.length - 1]" alt="" />
-                  </span>
-                  <span class="visually-hidden">{{ String(index + 1).padStart(2, '0') }}.</span>
+                  <span class="service-navigation-number">{{ String(index + 1).padStart(2, '0') }}</span>
                   <span>{{ navigationTitle(service.title) }}</span>
                 </button>
               </nav>
@@ -189,11 +193,12 @@ onUnmounted(() => {
 .services-grid-header, .services-workspace { display: grid; grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr); gap: var(--space-m); }
 .services-grid-header { padding-right: max(3.65vw, calc(env(safe-area-inset-right) + 2.92vw)); padding-bottom: 7vw; }
 .services-main-title, .services-sec-title { margin: 0; color: #fff; font-size: .72rem; font-weight: 400; line-height: 1; letter-spacing: -.035em; }
-.service-detail { display: flex; min-width: 0; min-height: 70vh; padding: 2.8vw; border: 1px solid var(--color-line); background: radial-gradient(circle at 90% 0%, rgba(112, 107, 205, .13), transparent 45%), rgba(7, 8, 18, .28); flex-direction: column; }
+.service-detail { position: relative; display: flex; min-width: 0; min-height: 70vh; padding: 2.8vw; overflow: hidden; border: 1px solid var(--color-line); background: radial-gradient(circle at 90% 0%, rgba(112, 107, 205, .13), transparent 45%), rgba(7, 8, 18, .28); flex-direction: column; }
 .service-detail-meta, .service-detail-row { display: grid; grid-template-columns: minmax(6.25vw, .35fr) minmax(0, 1fr); gap: 1.8vw; }
 .service-detail-meta, .service-detail-row > span, .accordion-row > span { color: rgba(241, 241, 240, .55); font-size: .68vw; font-weight: 300; line-height: 1.3; letter-spacing: .055em; text-transform: uppercase; }
 .service-detail-meta > span:last-child { text-align: right; }
-.service-detail-copy { padding: 8vw 0 5vw; }
+.service-detail-icon { position: absolute; top: clamp(105px, 9.5vw, 210px); right: clamp(42px, 5vw, 110px); display: block; width: clamp(105px, 10.5vw, 220px); aspect-ratio: 1; object-fit: contain; opacity: .68; pointer-events: none; }
+.service-detail-copy { position: relative; z-index: 1; padding: 8vw 0 5vw; }
 .service-detail-copy h1 { max-width: 14ch; margin: 0; font-size: 3.7vw; font-weight: 300; line-height: .98; letter-spacing: -.055em; text-wrap: balance; overflow-wrap: anywhere; }
 .service-detail-copy p, .service-detail-row p { margin: 0; white-space: pre-line; }
 .service-detail-copy p { max-width: 54ch; margin-top: 3vw; color: rgba(241, 241, 240, .76); font-size: 1vw; font-weight: 300; line-height: 1.42; letter-spacing: 0; word-spacing: .06em; }
@@ -203,10 +208,8 @@ onUnmounted(() => {
 .service-detail-price p { color: #f1f1f0; font-size: 1.25vw; line-height: 1.35; }
 .service-navigation { align-self: start; border-top: 1px solid var(--color-line); }
 .service-navigation-item { display: grid; grid-template-columns: minmax(2.08vw, .28fr) minmax(0, 1fr); gap: .625vw; align-items: center; width: 100%; min-height: 3.7vw; padding: .52vw 0; border: 0; border-bottom: 1px solid var(--color-line); color: rgba(241, 241, 240, .58); background: transparent; font: inherit; font-size: 1.35vw; font-weight: 300; line-height: 1.04; letter-spacing: -.035em; text-align: left; cursor: pointer; transition: color .25s ease, padding-left .25s ease; }
-.service-navigation-icon { display: grid; width: clamp(18px, 1.25vw, 32px); aspect-ratio: 1; place-items: center; opacity: .48; transition: opacity .25s ease, transform .25s ease; }
-.service-navigation-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.service-navigation-number { color: rgba(241, 241, 240, .42); font-size: .4em; letter-spacing: .04em; }
 .service-navigation-item.active, .service-navigation-item:hover { padding-left: .12em; color: #fff; }
-.service-navigation-item.active .service-navigation-icon, .service-navigation-item:hover .service-navigation-icon { opacity: 1; transform: scale(1.06); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .services-accordion { display: none; }
 .services-empty { padding: 6vw 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); font-size: 2vw; font-weight: 300; opacity: .58; }
