@@ -108,10 +108,18 @@ const animateProjectTitles = () => {
 
 const fetchProjects = async () => {
   try {
-    const response = await fetch(`${DIRECTUS_URL}/items/projects?fields=id,title,year,is_in_menu,preview&limit=-1`)
+    const query = new URLSearchParams({
+      fields: 'id,title,year,is_in_menu,preview',
+      limit: '-1',
+      'filter[is_in_menu][_eq]': 'true',
+      _: String(Date.now()),
+    })
+    const response = await fetch(`${DIRECTUS_URL}/items/projects?${query}`, {
+      cache: 'no-store',
+    })
     if (!response.ok) throw new Error(`CMS returned ${response.status}`)
     const { data } = await response.json()
-    allProjects.value = data
+    allProjects.value = Array.isArray(data) ? data : []
     window.setTimeout(() => warmProjectPreviews(primaryProjects.value), 350)
   } catch (error) {
     console.error('Ошибка получения проектов из Directus:', error)
@@ -140,7 +148,7 @@ const fetchProjects = async () => {
 // Фильтруем проекты, которые должны быть в меню (is_in_menu === true)
 const primaryProjects = computed(() => {
   return allProjects.value
-      .filter(p => p.is_in_menu)
+      .filter(p => p.is_in_menu === true)
       .sort((a, b) => {
         const yearDifference = (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0)
         return yearDifference || String(a.title || '').localeCompare(String(b.title || ''), 'ru')
