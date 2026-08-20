@@ -274,6 +274,7 @@ onUnmounted(() => {
 
 /* Сетка заголовка проекта */
 .project-grid-header {
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: minmax(0, 2.06fr) minmax(0, 1fr);
   gap: var(--space-m);
@@ -344,6 +345,8 @@ onUnmounted(() => {
 */
 @media (max-width: 759px) {
   .project-section {
+    width: 100%;
+    max-width: 100%;
     min-height: 100svh;
     gap: 28px;
     padding: 16px 20px 48px;
@@ -352,6 +355,8 @@ onUnmounted(() => {
   .project-grid-header {
     grid-template-columns: 1fr;
     gap: 8px;
+    min-width: 0;
+    max-width: 100%;
     padding-right: 56px;
   }
 
@@ -369,10 +374,13 @@ onUnmounted(() => {
 /* Контентная область по макету */
 .project-content {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   position: relative;
   flex-grow: 1;
   gap: var(--space-m);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (min-width: 760px) {
@@ -383,14 +391,19 @@ onUnmounted(() => {
 
 /* Колонка 1: Главный большой слайд */
 .project-main-image-col {
+  box-sizing: border-box;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   aspect-ratio: 1.5;
   overflow: hidden;
   background-color: #ffffff05;
 }
 
 .main-project-img {
+  display: block;
   width: 100%;
+  max-width: 100%;
   height: 100%;
   object-fit: cover;
 }
@@ -404,6 +417,8 @@ onUnmounted(() => {
 .project-details-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .project-title-header {
@@ -437,6 +452,8 @@ onUnmounted(() => {
 .project-details-split {
   display: flex;
   gap: var(--space-m);
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Вертикальный слайдер со стрелками */
@@ -609,6 +626,9 @@ onUnmounted(() => {
   }
 
   .project-main-image-col {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     aspect-ratio: 4 / 3;
   }
 
@@ -633,9 +653,11 @@ onUnmounted(() => {
   .project-details-split {
     flex-direction: column;
     gap: 26px;
+    width: 100%;
   }
 
   .gallery-slider-wrapper {
+    box-sizing: border-box;
     flex-direction: row;
     align-items: center;
     gap: 8px;
@@ -658,9 +680,12 @@ onUnmounted(() => {
   }
 
   .thumbnails-container {
+    flex: 1 1 0;
     flex-direction: row;
     gap: 8px;
+    width: auto;
     min-width: 0;
+    max-width: 100%;
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
