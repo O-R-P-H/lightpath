@@ -380,6 +380,14 @@ onUnmounted(() => {
   transition: opacity .25s ease;
 }
 
+@media (min-width: 760px) {
+  .hero-list {
+    box-sizing: border-box;
+    height: 79vh;
+    align-content: space-between;
+  }
+}
+
 .scene-explorer {
   box-sizing: border-box;
   display: grid;
