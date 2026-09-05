@@ -234,6 +234,7 @@ const loadHomepage = async () => {
   const query = new URLSearchParams({
     fields: 'fixture_filters,temperature_filters,placeholder_color,scene_items.id,scene_items.sort,scene_items.image.id,scene_items.fixture_filters,scene_items.temperature_filter',
     'deep[scene_items][_sort]': 'sort',
+    'deep[scene_items][_limit]': '-1',
     _: String(Date.now()),
   })
 
